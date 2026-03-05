@@ -1,0 +1,6 @@
+var a = [1, 2, 3];
+print a[0];
+print a[2];
+var m = matrix2d(3, 3);
+matSet(m, 1, 1, 99);
+print matGet(m, 1, 1);

@@ -1,0 +1,4 @@
+bin/
+src/*.o
+lib/glad/src/*.o
+*.core
