@@ -1,0 +1,563 @@
+var PI      = 3.14159265358979;
+var TAU     = PI * 2;
+var E       = 2.71828182835904;
+var EPSILON = 0.000001;
+var DEG2RAD = 0.01745329251994;
+var RAD2DEG = 57.2957795130823;
+
+fun clamp(value, minVal, maxVal) {
+    if (value < minVal) return minVal;
+    if (value > maxVal) return maxVal;
+    return value;
+}
+
+fun lerp(a, b, t) {
+    return a + (b - a) * t;
+}
+
+fun smoothstep(edge0, edge1, x) {
+    var t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+    return t * t * (3 - 2 * t);
+}
+
+fun sign(value) {
+    if (value < 0) return -1;
+    if (value > 0) return 1;
+    return 0;
+}
+
+fun max(a, b) {
+    if (a > b) return a;
+    return b;
+}
+
+fun min(a, b) {
+    if (a < b) return a;
+    return b;
+}
+
+fun inverseLerp(a, b, value) {
+    if (a == b) return nil;
+    return (value - a) / (b - a);
+}
+
+fun remap(inMin, inMax, outMin, outMax, value) {
+    var t = inverseLerp(inMin, inMax, value);
+    return lerp(outMin, outMax, t);
+}
+
+fun fract(value) {
+    return value - floor(value);
+}
+
+fun mod(a, b) {
+    return a - floor(a / b) * b;
+}
+
+fun degToRad(degrees) {
+    return degrees * DEG2RAD;
+}
+
+fun radToDeg(radians) {
+    return radians * RAD2DEG;
+}
+
+fun derivative(f, x) {
+    var h = 0.0001;
+    return (f(x + h) - f(x - h)) / (2 * h);
+}
+
+fun integrate(f, a, b, n) {
+    if (mod(n, 2) != 0) n = n + 1;
+    var h = (b - a) / n;
+    var sum = f(a) + f(b);
+    var i = 1;
+    while (i < n) {
+        var x = a + i * h;
+        if (mod(i, 2) != 0) {
+            sum = sum + 4 * f(x);
+        } else {
+            sum = sum + 2 * f(x);
+        }
+        i = i + 1;
+    }
+    return (h / 3) * sum;
+}
+
+fun findRoot(f, guess) {
+    var x = guess;
+    var i = 0;
+    while (i < 100) {
+        var fx = f(x);
+        if (abs(fx) < EPSILON) return x;
+        x = x - fx / derivative(f, x);
+        i = i + 1;
+    }
+    return x;
+}
+
+fun gradientDescent(f, guess, learningRate) {
+    var x = guess;
+    var i = 0;
+    while (i < 1000) {
+        var dx = derivative(f, x);
+        x = x - learningRate * dx;
+        i = i + 1;
+    }
+    return x;
+}
+
+fun factorial(n) {
+    if (n < 0) return nil;
+    var result = 1;
+    var i = 1;
+    while (i <= n) {
+        result = result * i;
+        i = i + 1;
+    }
+    return result;
+}
+
+fun gcd(a, b) {
+    while (b != 0) {
+        var temp = b;
+        b = mod(a, b);
+        a = temp;
+    }
+    return a;
+}
+
+fun lcm(a, b) {
+    return (a * b) / gcd(a, b);
+}
+
+fun isPrime(n) {
+    if (n < 2) return false;
+    if (n == 2) return true;
+    if (mod(n, 2) == 0) return false;
+    var i = 3;
+    while (i <= sqrt(n)) {
+        if (mod(n, i) == 0) return false;
+        i = i + 2;
+    }
+    return true;
+}
+
+fun fibonacci(n) {
+    if (n < 0) return nil;
+    if (n == 0) return 0;
+    if (n == 1) return 1;
+    var a = 0;
+    var b = 1;
+    var i = 2;
+    while (i <= n) {
+        var next = a + b;
+        a = b;
+        b = next;
+        i = i + 1;
+    }
+    return b;
+}
+
+fun permutations(n, r) {
+    return factorial(n) / factorial(n - r);
+}
+
+fun combinations(n, r) {
+    return factorial(n) / (factorial(r) * factorial(n - r));
+}
+
+class Vec2 {
+    init(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+    add(other) {
+        return Vec2(this.x + other.x, this.y + other.y);
+    }
+    sub(other) {
+        return Vec2(this.x - other.x, this.y - other.y);
+    }
+    scale(scalar) {
+        return Vec2(this.x * scalar, this.y * scalar);
+    }
+    dot(other) {
+        return (this.x * other.x) + (this.y * other.y);
+    }
+    length() {
+        return sqrt(this.x * this.x + this.y * this.y);
+    }
+    normalize() {
+        var len = this.length();
+        if (len == 0) return Vec2(0, 0);
+        return Vec2(this.x / len, this.y / len);
+    }
+    distance(other) {
+        return this.sub(other).length();
+    }
+    lerp(other, t) {
+        return Vec2(lerp(this.x, other.x, t), lerp(this.y, other.y, t));
+    }
+    negate() {
+        return Vec2(-this.x, -this.y);
+    }
+    equals(other) {
+        return abs(this.x - other.x) < EPSILON and abs(this.y - other.y) < EPSILON;
+    }
+    toString() {
+        print "Vec2(" + numToString(this.x) + ", " + numToString(this.y) + ")";
+    }
+}
+
+class Vec3 {
+    init(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+    add(other) {
+        return Vec3(this.x + other.x, this.y + other.y, this.z + other.z);
+    }
+    sub(other) {
+        return Vec3(this.x - other.x, this.y - other.y, this.z - other.z);
+    }
+    scale(scalar) {
+        return Vec3(this.x * scalar, this.y * scalar, this.z * scalar);
+    }
+    dot(other) {
+        return (this.x * other.x) + (this.y * other.y) + (this.z * other.z);
+    }
+    cross(other) {
+        var x = (this.y * other.z) - (this.z * other.y);
+        var y = (this.z * other.x) - (this.x * other.z);
+        var z = (this.x * other.y) - (this.y * other.x);
+        return Vec3(x, y, z);
+    }
+    length() {
+        return sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+    }
+    normalize() {
+        var len = this.length();
+        if (len == 0) return Vec3(0, 0, 0);
+        return Vec3(this.x / len, this.y / len, this.z / len);
+    }
+    distance(other) {
+        return this.sub(other).length();
+    }
+    lerp(other, t) {
+        return Vec3(lerp(this.x, other.x, t), lerp(this.y, other.y, t), lerp(this.z, other.z, t));
+    }
+    negate() {
+        return Vec3(-this.x, -this.y, -this.z);
+    }
+    equals(other) {
+        return abs(this.x - other.x) < EPSILON and
+               abs(this.y - other.y) < EPSILON and
+               abs(this.z - other.z) < EPSILON;
+    }
+    toString() {
+        print "Vec3(" + numToString(this.x) + ", " + numToString(this.y) + ", " + numToString(this.z) + ")";
+    }
+}
+
+class Vec4 {
+    init(x, y, z, w) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
+    }
+    add(other) {
+        return Vec4(this.x + other.x, this.y + other.y, this.z + other.z, this.w + other.w);
+    }
+    sub(other) {
+        return Vec4(this.x - other.x, this.y - other.y, this.z - other.z, this.w - other.w);
+    }
+    scale(scalar) {
+        return Vec4(this.x * scalar, this.y * scalar, this.z * scalar, this.w * scalar);
+    }
+    dot(other) {
+        return (this.x * other.x) + (this.y * other.y) + (this.z * other.z) + (this.w * other.w);
+    }
+    length() {
+        return sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w);
+    }
+    normalize() {
+        var len = this.length();
+        if (len == 0) return Vec4(0, 0, 0, 0);
+        return Vec4(this.x / len, this.y / len, this.z / len, this.w / len);
+    }
+    distance(other) {
+        return this.sub(other).length();
+    }
+    lerp(other, t) {
+        return Vec4(lerp(this.x, other.x, t), lerp(this.y, other.y, t), lerp(this.z, other.z, t), lerp(this.w, other.w, t));
+    }
+    negate() {
+        return Vec4(-this.x, -this.y, -this.z, -this.w);
+    }
+    equals(other) {
+        return abs(this.x - other.x) < EPSILON and
+               abs(this.y - other.y) < EPSILON and
+               abs(this.z - other.z) < EPSILON and
+               abs(this.w - other.w) < EPSILON;
+    }
+    toString() {
+        print "Vec4(" + numToString(this.x) + ", " + numToString(this.y) + ", " + numToString(this.z) + ", " + numToString(this.w) + ")";
+    }
+}
+
+class Quaternion {
+    init(x, y, z, w) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
+    }
+    lengthSq() {
+        return this.x*this.x + this.y*this.y + this.z*this.z + this.w*this.w;
+    }
+    length() {
+        return sqrt(this.lengthSq());
+    }
+    normalize() {
+        var len = this.length();
+        if (len == 0) return Quaternion(0, 0, 0, 1);
+        return Quaternion(this.x / len, this.y / len, this.z / len, this.w / len);
+    }
+    conjugate() {
+        return Quaternion(-this.x, -this.y, -this.z, this.w);
+    }
+    inverse() {
+        var lenSq = this.lengthSq();
+        if (lenSq == 0) return Quaternion(0, 0, 0, 1);
+        var c = this.conjugate();
+        return Quaternion(c.x / lenSq, c.y / lenSq, c.z / lenSq, c.w / lenSq);
+    }
+    mul(other) {
+        var x = (this.w*other.x + this.x*other.w + this.y*other.z - this.z*other.y);
+        var y = (this.w*other.y - this.x*other.z + this.y*other.w + this.z*other.x);
+        var z = (this.w*other.z + this.x*other.y - this.y*other.x + this.z*other.w);
+        var w = (this.w*other.w - this.x*other.x - this.y*other.y - this.z*other.z);
+        return Quaternion(x, y, z, w);
+    }
+    rotateVec3(v) {
+        var p = Quaternion(v.x, v.y, v.z, 0);
+        var result = this.mul(p).mul(this.inverse());
+        return Vec3(result.x, result.y, result.z);
+    }
+    slerp(other, t) {
+        var dot = this.x*other.x + this.y*other.y + this.z*other.z + this.w*other.w;
+        var ox = other.x; var oy = other.y; var oz = other.z; var ow = other.w;
+        if (dot < 0) {
+            ox = -ox; oy = -oy; oz = -oz; ow = -ow;
+            dot = -dot;
+        }
+        if (dot > 0.9995) {
+            return Quaternion(lerp(this.x, ox, t), lerp(this.y, oy, t), lerp(this.z, oz, t), lerp(this.w, ow, t)).normalize();
+        }
+        var angle = acos(dot);
+        var sinAngle = sin(angle);
+        var ratioA = sin((1 - t) * angle) / sinAngle;
+        var ratioB = sin(t * angle) / sinAngle;
+        return Quaternion(
+            ratioA * this.x + ratioB * ox,
+            ratioA * this.y + ratioB * oy,
+            ratioA * this.z + ratioB * oz,
+            ratioA * this.w + ratioB * ow
+        );
+    }
+    equals(other) {
+        return abs(this.x - other.x) < EPSILON and
+               abs(this.y - other.y) < EPSILON and
+               abs(this.z - other.z) < EPSILON and
+               abs(this.w - other.w) < EPSILON;
+    }
+    toString() {
+        print "Quat(" + numToString(this.x) + ", " + numToString(this.y) + ", " + numToString(this.z) + ", " + numToString(this.w) + ")";
+    }
+}
+
+fun quatFromAxisAngle(axis, angle) {
+    var half = angle / 2;
+    var s = sin(half);
+    return Quaternion(axis.x * s, axis.y * s, axis.z * s, cos(half));
+}
+
+fun quatFromEuler(pitch, yaw, roll) {
+    var cx = cos(pitch/2); var sx = sin(pitch/2);
+    var cy = cos(yaw/2);   var sy = sin(yaw/2);
+    var cz = cos(roll/2);  var sz = sin(roll/2);
+    return Quaternion(
+        sx*cy*cz + cx*sy*sz,
+        cx*sy*cz - sx*cy*sz,
+        cx*cy*sz + sx*sy*cz,
+        cx*cy*cz - sx*sy*sz
+    );
+}
+
+class Mat4 {
+    init(
+        m00, m01, m02, m03,
+        m10, m11, m12, m13,
+        m20, m21, m22, m23,
+        m30, m31, m32, m33
+    ) {
+        this.m00 = m00; this.m01 = m01; this.m02 = m02; this.m03 = m03;
+        this.m10 = m10; this.m11 = m11; this.m12 = m12; this.m13 = m13;
+        this.m20 = m20; this.m21 = m21; this.m22 = m22; this.m23 = m23;
+        this.m30 = m30; this.m31 = m31; this.m32 = m32; this.m33 = m33;
+    }
+    mul(b) {
+        return Mat4(
+            this.m00*b.m00 + this.m10*b.m01 + this.m20*b.m02 + this.m30*b.m03,
+            this.m01*b.m00 + this.m11*b.m01 + this.m21*b.m02 + this.m31*b.m03,
+            this.m02*b.m00 + this.m12*b.m01 + this.m22*b.m02 + this.m32*b.m03,
+            this.m03*b.m00 + this.m13*b.m01 + this.m23*b.m02 + this.m33*b.m03,
+            this.m00*b.m10 + this.m10*b.m11 + this.m20*b.m12 + this.m30*b.m13,
+            this.m01*b.m10 + this.m11*b.m11 + this.m21*b.m12 + this.m31*b.m13,
+            this.m02*b.m10 + this.m12*b.m11 + this.m22*b.m12 + this.m32*b.m13,
+            this.m03*b.m10 + this.m13*b.m11 + this.m23*b.m12 + this.m33*b.m13,
+            this.m00*b.m20 + this.m10*b.m21 + this.m20*b.m22 + this.m30*b.m23,
+            this.m01*b.m20 + this.m11*b.m21 + this.m21*b.m22 + this.m31*b.m23,
+            this.m02*b.m20 + this.m12*b.m21 + this.m22*b.m22 + this.m32*b.m23,
+            this.m03*b.m20 + this.m13*b.m21 + this.m23*b.m22 + this.m33*b.m23,
+            this.m00*b.m30 + this.m10*b.m31 + this.m20*b.m32 + this.m30*b.m33,
+            this.m01*b.m30 + this.m11*b.m31 + this.m21*b.m32 + this.m31*b.m33,
+            this.m02*b.m30 + this.m12*b.m31 + this.m22*b.m32 + this.m32*b.m33,
+            this.m03*b.m30 + this.m13*b.m31 + this.m23*b.m32 + this.m33*b.m33
+        );
+    }
+    mulVec4(v) {
+        return Vec4(
+            this.m00*v.x + this.m10*v.y + this.m20*v.z + this.m30*v.w,
+            this.m01*v.x + this.m11*v.y + this.m21*v.z + this.m31*v.w,
+            this.m02*v.x + this.m12*v.y + this.m22*v.z + this.m32*v.w,
+            this.m03*v.x + this.m13*v.y + this.m23*v.z + this.m33*v.w
+        );
+    }
+    mulVec3(v) {
+        var r = this.mulVec4(Vec4(v.x, v.y, v.z, 1));
+        return Vec3(r.x, r.y, r.z);
+    }
+    transpose() {
+        return Mat4(
+            this.m00, this.m10, this.m20, this.m30,
+            this.m01, this.m11, this.m21, this.m31,
+            this.m02, this.m12, this.m22, this.m32,
+            this.m03, this.m13, this.m23, this.m33
+        );
+    }
+    toString() {
+        print "[" + numToString(this.m00) + ", " + numToString(this.m10) + ", " + numToString(this.m20) + ", " + numToString(this.m30) + "]";
+        print "[" + numToString(this.m01) + ", " + numToString(this.m11) + ", " + numToString(this.m21) + ", " + numToString(this.m31) + "]";
+        print "[" + numToString(this.m02) + ", " + numToString(this.m12) + ", " + numToString(this.m22) + ", " + numToString(this.m32) + "]";
+        print "[" + numToString(this.m03) + ", " + numToString(this.m13) + ", " + numToString(this.m23) + ", " + numToString(this.m33) + "]";
+    }
+}
+
+fun mat4Identity() {
+    return Mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1);
+}
+fun mat4Translate(x, y, z) {
+    return Mat4(1,0,0,0, 0,1,0,0, 0,0,1,0, x,y,z,1);
+}
+fun mat4Scale(x, y, z) {
+    return Mat4(x,0,0,0, 0,y,0,0, 0,0,z,0, 0,0,0,1);
+}
+fun mat4RotateX(angle) {
+    var c = cos(angle); var s = sin(angle);
+    return Mat4(1,0,0,0, 0,c,s,0, 0,-s,c,0, 0,0,0,1);
+}
+fun mat4RotateY(angle) {
+    var c = cos(angle); var s = sin(angle);
+    return Mat4(c,0,-s,0, 0,1,0,0, s,0,c,0, 0,0,0,1);
+}
+fun mat4RotateZ(angle) {
+    var c = cos(angle); var s = sin(angle);
+    return Mat4(c,s,0,0, -s,c,0,0, 0,0,1,0, 0,0,0,1);
+}
+fun mat4Perspective(fovY, aspect, near, far) {
+    var tanHalf = tan(fovY / 2);
+    var a = 1 / (aspect * tanHalf);
+    var b = 1 / tanHalf;
+    var c = -(far + near) / (far - near);
+    var d = -(2 * far * near) / (far - near);
+    return Mat4(a,0,0,0, 0,b,0,0, 0,0,c,-1, 0,0,d,0);
+}
+fun mat4Ortho(left, right, bottom, top, near, far) {
+    var tx = -(right + left) / (right - left);
+    var ty = -(top + bottom) / (top - bottom);
+    var tz = -(far + near) / (far - near);
+    return Mat4(
+        2/(right-left), 0,              0,            0,
+        0,              2/(top-bottom), 0,            0,
+        0,              0,             -2/(far-near), 0,
+        tx,             ty,             tz,           1
+    );
+}
+fun mat4LookAt(eye, center, up) {
+    var f = center.sub(eye).normalize();
+    var r = f.cross(up).normalize();
+    var u = r.cross(f);
+    return Mat4(
+         r.x,  u.x, -f.x, 0,
+         r.y,  u.y, -f.y, 0,
+         r.z,  u.z, -f.z, 0,
+        -r.dot(eye), -u.dot(eye), f.dot(eye), 1
+    );
+}
+fun mat4FromQuat(q) {
+    var x2 = q.x+q.x; var y2 = q.y+q.y; var z2 = q.z+q.z;
+    var xx = q.x*x2; var xy = q.x*y2; var xz = q.x*z2;
+    var yy = q.y*y2; var yz = q.y*z2; var zz = q.z*z2;
+    var wx = q.w*x2; var wy = q.w*y2; var wz = q.w*z2;
+    return Mat4(
+        1-(yy+zz), xy+wz,     xz-wy,     0,
+        xy-wz,     1-(xx+zz), yz+wx,     0,
+        xz+wy,     yz-wx,     1-(xx+yy), 0,
+        0,         0,         0,         1
+    );
+}
+
+class Complex {
+    init(real, imaginary) {
+        this.r = real;
+        this.i = imaginary;
+    }
+    add(other) {
+        return Complex(this.r + other.r, this.i + other.i);
+    }
+    sub(other) {
+        return Complex(this.r - other.r, this.i - other.i);
+    }
+    mul(other) {
+        var real = this.r * other.r - this.i * other.i;
+        var imag = this.r * other.i + this.i * other.r;
+        return Complex(real, imag);
+    }
+    div(other) {
+        var denom = other.r * other.r + other.i * other.i;
+        if (denom == 0) return nil;
+        var conj = other.conjugate();
+        var num = this.mul(conj);
+        return Complex(num.r / denom, num.i / denom);
+    }
+    scale(a) {
+        return Complex(this.r * a, this.i * a);
+    }
+    magnitude() {
+        return sqrt(this.r * this.r + this.i * this.i);
+    }
+    conjugate() {
+        return Complex(this.r, -this.i);
+    }
+    toString() {
+        print numToString(this.r) + " + " + numToString(this.i) + "i";
+    }
+}
+
+fun convolve(input, filter)
+{
+    for 
+}
