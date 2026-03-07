@@ -15,7 +15,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libglfw3-dev libgl1-mesa-dev python3-pip
+          sudo apt-get install -y libglfw3-dev libgl1-mesa-dev python3-pip libcurl4-openssl-dev
           pip3 install glad --break-system-packages
           python3 -m glad --profile core --api gl=3.3 --generator c --out-path lib/glad
 
