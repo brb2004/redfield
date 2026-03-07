@@ -1,0 +1,78 @@
+name: Build Redfield
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglfw3-dev libgl1-mesa-dev python3-pip
+          pip3 install glad --break-system-packages
+          python3 -m glad --profile core --api gl=3.3 --generator c --out-path lib/glad
+
+      - name: Build
+        run: make
+
+      - name: Upload Linux binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: redfield-linux
+          path: bin/redfield
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-glfw
+            mingw-w64-x86_64-python
+            make
+
+      - name: Install glad
+        shell: msys2 {0}
+        run: |
+          pip3 install glad --break-system-packages || pip3 install glad
+          python3 -m glad --profile core --api gl=3.3 --generator c --out-path lib/glad
+
+      - name: Build
+        shell: msys2 {0}
+        run: make
+
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: redfield-windows
+          path: bin/redfield.exe
+
+  release:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            redfield-linux/redfield
+            redfield-windows/redfield.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
