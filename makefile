@@ -7,6 +7,7 @@ BIN = bin/redfield
 all: $(BIN)
 
 $(BIN): $(OBJ)
+	mkdir -p bin
 	$(CC) $(OBJ) -o $(BIN) -lglfw -lGL -ldl -lm -lcurl
 
 src/%.o: src/%.c
