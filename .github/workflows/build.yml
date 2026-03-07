@@ -33,6 +33,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate glad
+        run: |
+          pip install glad
+          python -m glad --profile core --api gl=3.3 --generator c --out-path lib/glad
+
       - name: Install MSYS2
         uses: msys2/setup-msys2@v2
         with:
@@ -41,14 +51,8 @@ jobs:
           install: >-
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-glfw
-            mingw-w64-x86_64-python
+            mingw-w64-x86_64-curl
             make
-
-      - name: Install glad
-        shell: msys2 {0}
-        run: |
-          pip3 install glad --break-system-packages || pip3 install glad
-          python3 -m glad --profile core --api gl=3.3 --generator c --out-path lib/glad
 
       - name: Build
         shell: msys2 {0}
