@@ -556,8 +556,3 @@ class Complex {
         print numToString(this.r) + " + " + numToString(this.i) + "i";
     }
 }
-
-fun convolve(input, filter)
-{
-    for 
-}

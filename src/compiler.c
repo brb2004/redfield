@@ -31,7 +31,7 @@ typedef enum {
 } Precedence;
 
 typedef void (*ParseFn)(bool canAssign);
-
+static void importStatement();
 typedef struct {
   ParseFn prefix;
   ParseFn infix;
@@ -842,8 +842,50 @@ static void declaration() {
   if (parser.panicMode) synchronize();
  
 }
+static void importStatement() {
+    consume(TOKEN_STRING, "Expect filename after 'import'.");
+    int length = parser.previous.length - 2;
+    char* path = ALLOCATE(char, length + 1);
+    memcpy(path, parser.previous.start + 1, length);
+    path[length] = '\0';
+
+    FILE* file = fopen(path, "rb");
+    if (file == NULL) {
+        error("Could not open import file.");
+        FREE_ARRAY(char, path, length + 1);
+        consume(TOKEN_SEMICOLON, "Expect ';' after import.");
+        return;
+    }
+    fseek(file, 0L, SEEK_END);
+    size_t size = ftell(file);
+    rewind(file);
+    char* source = ALLOCATE(char, size + 1);
+    fread(source, sizeof(char), size, file);
+    source[size] = '\0';
+    fclose(file);
+    FREE_ARRAY(char, path, length + 1);
+
+    Scanner savedScanner = scanner;
+    Token savedPrevious = parser.previous;
+    Token savedCurrent = parser.current;
+
+    initScanner(source);
+    advance();
+    while (!match(TOKEN_EOF)) {
+        declaration();
+    }
+
+    FREE_ARRAY(char, source, size + 1);
+    scanner = savedScanner;
+    parser.previous = savedPrevious;
+    parser.current = savedCurrent;
+
+    consume(TOKEN_SEMICOLON, "Expect ';' after import.");
+}
 static void statement() {
-  if (match(TOKEN_PRINT)) {
+  if (match(TOKEN_IMPORT)) {
+    importStatement();
+} else if (match(TOKEN_PRINT)) {
     printStatement();
     }
     else if (match(TOKEN_FOR)) {
