@@ -490,8 +490,31 @@ static InterpretResult run() {
         break;
       }
 
-      
-      
+      case OP_IMPORT: {
+        ObjString* path = AS_STRING(READ_CONSTANT());
+
+        FILE* file = fopen(path->chars, "rb");
+        if (file == NULL) {
+            runtimeError("Could not open module '%s'.", path->chars);
+            return INTERPRET_RUNTIME_ERROR;
+        }
+        fseek(file, 0L, SEEK_END);
+        size_t size = ftell(file);
+        rewind(file);
+        char* source = (char*)malloc(size + 1);
+        fread(source, sizeof(char), size, file);
+        source[size] = '\0';
+        fclose(file);
+        ObjFunction* function = compile(source);
+        free(source);
+        if (function == NULL) return INTERPRET_COMPILE_ERROR;
+
+        ObjClosure* closure = newClosure(function);
+        push(OBJ_VAL(closure));
+        callValue(OBJ_VAL(closure), 0);
+        break;
+    }
+          
       
       case OP_INVOKE: {
         ObjString* method   = READ_STRING();
