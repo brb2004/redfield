@@ -8,6 +8,7 @@
 #include "glad/glad.h"  
 #include <GLFW/glfw3.h> 
 #include "natives.h"
+#include "redfield_stdlib.h"
 GLFWwindow* window = NULL;
 
 static void repl() {
@@ -72,6 +73,7 @@ int main(int argc, const char* argv[])
 {
     initVM();
     registerNatives();
+    interpret(REDFIELD_STDLIB);
   if (argc == 1) {
     repl();
   } else if (argc == 2) {
