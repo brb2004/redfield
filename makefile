@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -Isrc -Ilib/glad/include -Wno-unused-parameter
+CFLAGS = -Wall -Wextra -std=c99 -D_DEFAULT_SOURCE -Isrc -Ilib/glad/include -Wno-unused-parameter
 SRC = $(filter-out src/editor.c, $(wildcard src/*.c))
 OBJ = $(SRC:.c=.o)
 BIN_DIR = bin
@@ -13,7 +13,10 @@ else
     LIBS = -lglfw -lGL -ldl -lm -lcurl
 endif
 
-all: $(BIN)
+all: src/redfield_stdlib.h $(BIN)
+
+src/redfield_stdlib.h: lib/stdlib.rf
+	python3 -c "import json; content=open('lib/stdlib.rf').read(); print('const char* REDFIELD_STDLIB = ' + json.dumps(content) + ';')" > src/redfield_stdlib.h
 
 $(BIN): $(OBJ)
 	mkdir -p $(BIN_DIR)
@@ -24,6 +27,6 @@ src/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f src/*.o lib/glad/src/glad.o $(BIN)
+	rm -f src/*.o lib/glad/src/glad.o $(BIN) src/redfield_stdlib.h
 
 .PHONY: all clean
