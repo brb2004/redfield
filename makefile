@@ -7,7 +7,7 @@ BIN_DIR = bin
 # Detect OS
 ifeq ($(OS),Windows_NT)
     BIN = $(BIN_DIR)/redfield.exe
-    LIBS = -lglfw3 -lopengl32 -lgdi32 -lcurl -lm
+    LIBS = -lglfw3 -lopengl32 -lgdi32 -lcurl -lm -mconsole
 else
     BIN = $(BIN_DIR)/redfield
     LIBS = -lglfw -lGL -ldl -lm -lcurl
