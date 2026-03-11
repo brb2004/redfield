@@ -1,14 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
+#include <math.h>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include "vm.h"
 #include "natives.h"
 #include "obj.h"
 #include "memory.h"
-#include <string.h>
-#include <math.h>
+
+void runtimeError(const char* format, ...);
 
 extern GLFWwindow* window;
 extern void initOpenGL();
@@ -225,6 +227,216 @@ static Value matrix2dNative(int argCount, Value* args) {
     pop();  
     return OBJ_VAL(outer);
 }
+static Value fileOpenNative(int argCount, Value* args) {
+    if (argCount < 1 || argCount > 2) {
+        runtimeError("fileOpen expects 1-2 arguments (path, mode)");
+        return NIL_VAL;
+    }
+    
+    // Get filename
+    if (!IS_STRING(args[0])) {
+        runtimeError("fileOpen: filename must be a string");
+        return NIL_VAL;
+    }
+    const char* filename = AS_CSTRING(args[0]);
+    
+    // Get mode (default to "r")
+    const char* mode = "r";
+    if (argCount == 2) {
+        if (!IS_STRING(args[1])) {
+            runtimeError("fileOpen: mode must be a string");
+            return NIL_VAL;
+        }
+        mode = AS_CSTRING(args[1]);
+    }
+    
+    // Open file
+    FILE* file = fopen(filename, mode);
+    if (file == NULL) {
+        // Return nil and let the script check with fileIsOpen
+        return NIL_VAL;
+    }
+    
+    // Create file object
+    ObjFile* file_obj = newFile(file, mode);
+    return OBJ_VAL(file_obj);
+}
+
+static Value fileCloseNative(int argCount, Value* args) {
+    if (argCount != 1) {
+        runtimeError("fileClose expects 1 argument");
+        return NIL_VAL;
+    }
+    
+    if (!IS_FILE(args[0])) {
+        runtimeError("fileClose expects a file object");
+        return NIL_VAL;
+    }
+    
+    ObjFile* file = AS_FILE(args[0]);
+    if (file->is_Open && file->file != NULL) {
+        fclose(file->file);
+        file->file = NULL;
+        file->is_Open = false;
+    }
+    
+    return NIL_VAL;
+}
+
+static Value fileReadNative(int argCount, Value* args) {
+    if (argCount != 1) {
+        runtimeError("fileRead expects 1 argument");
+        return NIL_VAL;
+    }
+    
+    if (!IS_FILE(args[0])) {
+        runtimeError("fileRead expects a file object");
+        return NIL_VAL;
+    }
+    
+    ObjFile* file = AS_FILE(args[0]);
+    if (!file->is_Open || file->file == NULL) {
+        runtimeError("fileRead: file is not open");
+        return NIL_VAL;
+    }
+    
+    // Read entire file
+    fseek(file->file, 0, SEEK_END);
+    long size = ftell(file->file);
+    fseek(file->file, 0, SEEK_SET);
+    
+    char* buffer = ALLOCATE(char, size + 1);
+    size_t bytes_read = fread(buffer, 1, size, file->file);
+    buffer[bytes_read] = '\0';
+    
+    ObjString* result = copyString(buffer, bytes_read);
+    FREE_ARRAY(char, buffer, size + 1);
+    
+    return OBJ_VAL(result);
+}
+
+static Value fileReadLineNative(int argCount, Value* args) {
+    if (argCount != 1) {
+        runtimeError("fileReadLine expects 1 argument");
+        return NIL_VAL;
+    }
+    
+    if (!IS_FILE(args[0])) {
+        runtimeError("fileReadLine expects a file object");
+        return NIL_VAL;
+    }
+    
+    ObjFile* file = AS_FILE(args[0]);
+    if (!file->is_Open || file->file == NULL) {
+        runtimeError("fileReadLine: file is not open");
+        return NIL_VAL;
+    }
+    
+    // Read line (simple approach - you might want a growing buffer)
+    char buffer[1024];
+    if (fgets(buffer, sizeof(buffer), file->file) == NULL) {
+        if (feof(file->file)) {
+            return NIL_VAL;  // EOF
+        }
+        runtimeError("fileReadLine: read error");
+        return NIL_VAL;
+    }
+    
+    return OBJ_VAL(copyString(buffer, strlen(buffer)));
+}
+
+static Value fileWriteNative(int argCount, Value* args) {
+    if (argCount != 2) {
+        runtimeError("fileWrite expects 2 arguments (file, string)");
+        return NIL_VAL;
+    }
+    
+    if (!IS_FILE(args[0])) {
+        runtimeError("fileWrite: first argument must be a file");
+        return NIL_VAL;
+    }
+    
+    if (!IS_STRING(args[1])) {
+        runtimeError("fileWrite: second argument must be a string");
+        return NIL_VAL;
+    }
+    
+    ObjFile* file = AS_FILE(args[0]);
+    if (!file->is_Open || file->file == NULL) {
+        runtimeError("fileWrite: file is not open");
+        return NIL_VAL;
+    }
+    
+    const char* text = AS_CSTRING(args[1]);
+    fprintf(file->file, "%s", text);
+    
+    return NIL_VAL;
+}
+
+static Value fileWriteLineNative(int argCount, Value* args) {
+    if (argCount != 2) {
+        runtimeError("fileWriteLine expects 2 arguments (file, string)");
+        return NIL_VAL;
+    }
+    
+    if (!IS_FILE(args[0])) {
+        runtimeError("fileWriteLine: first argument must be a file");
+        return NIL_VAL;
+    }
+    
+    if (!IS_STRING(args[1])) {
+        runtimeError("fileWriteLine: second argument must be a string");
+        return NIL_VAL;
+    }
+    
+    ObjFile* file = AS_FILE(args[0]);
+    if (!file->is_Open || file->file == NULL) {
+        runtimeError("fileWriteLine: file is not open");
+        return NIL_VAL;
+    }
+    
+    const char* text = AS_CSTRING(args[1]);
+    fprintf(file->file, "%s\n", text);
+    
+    return NIL_VAL;
+}
+
+static Value fileIsOpenNative(int argCount, Value* args) {
+    if (argCount != 1) {
+        runtimeError("fileIsOpen expects 1 argument");
+        return NIL_VAL;
+    }
+    
+    if (!IS_FILE(args[0])) {
+        return BOOL_VAL(false);
+    }
+    
+    ObjFile* file = AS_FILE(args[0]);
+    return BOOL_VAL(file->is_Open && file->file != NULL);
+}
+
+static Value fileExistsNative(int argCount, Value* args) {
+    if (argCount != 1 || !IS_STRING(args[0])) {
+        runtimeError("fileExists expects a string filename");
+        return NIL_VAL;
+    }
+    
+    const char* filename = AS_CSTRING(args[0]);
+    FILE* file = fopen(filename, "r");
+    if (file) {
+        fclose(file);
+        return BOOL_VAL(true);
+    }
+    return BOOL_VAL(false);
+}
+static Value fileFlushNative(int argCount, Value* args) {
+    if (argCount != 1 || !IS_FILE(args[0])) return NIL_VAL;
+    ObjFile* file = AS_FILE(args[0]);
+    if (file->is_open && file->file != NULL) {
+        fflush(file->file);  // Force write to disk
+    }
+    return NIL_VAL;
+}
 void registerNatives() {
     
     defineNative("windowShouldClose", windowShouldCloseNative);
@@ -268,6 +480,14 @@ void registerNatives() {
     defineNative("matRows", matRows);
     defineNative("matCols", matCols);
 
-    
+    defineNative("fileOpen",      fileOpenNative);
+    defineNative("fileClose",     fileCloseNative);
+    defineNative("fileRead",      fileReadNative);
+    defineNative("fileReadLine",  fileReadLineNative);
+    defineNative("fileWrite",     fileWriteNative);
+    defineNative("fileWriteLine", fileWriteLineNative);
+    defineNative("fileIsOpen",    fileIsOpenNative);
+    defineNative("fileExists",    fileExistsNative);
+    defineNative("fileFlush",     fileFlushNative);
     srand((unsigned int)time(NULL));
 }

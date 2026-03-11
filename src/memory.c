@@ -90,7 +90,10 @@ static void blackenObject(Obj* object) {
       markObject((Obj*)bound->method);
       break;
     }
-
+    case OBJ_FILE: {
+    ObjFile* file = (ObjFile*)object;
+    break;
+    }
     case OBJ_INSTANCE: {
       ObjInstance* instance = (ObjInstance*)object;
       markObject((Obj*)instance->klass);
@@ -272,6 +275,14 @@ static void freeObject(Obj* object) {
     FREE(ObjArray, object);
     break;
     }
+    case OBJ_FILE: {
+    ObjFile* file = (ObjFile*)object;
+    if (file->is_Open && file->file != NULL) {
+        fclose(file->file);
+    }
+    FREE(ObjFile, object);
+    break;
+}
   }
 }
 

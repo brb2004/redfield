@@ -1,2 +1,28 @@
-import "lib/math.rf";
-print sin(3.14);
+// Test file writing
+var f = fileOpen("test.txt", "w");
+if (fileIsOpen(f)) {
+    fileWriteLine(f, "Hello, Redfield!");
+    fileWriteLine(f, "File I/O is working!");
+    fileClose(f);
+    print "File written successfully";
+} else {
+    print "Failed to open file for writing";
+}
+
+// Test file reading
+f = fileOpen("test.txt", "r");
+if (fileIsOpen(f)) {
+    var line = fileReadLine(f);
+    while (line != nil) {
+        print line;
+        line = fileReadLine(f);
+    }
+    fileClose(f);
+} else {
+    print "Failed to open file for reading";
+}
+
+// Test file exists
+if (fileExists("test.txt")) {
+    print "test.txt exists";
+}

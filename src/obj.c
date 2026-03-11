@@ -69,6 +69,14 @@ static ObjString* allocateString(char* chars, int length, uint32_t hash) {
 
   return string;
 }
+ObjFile* newFile(FILE* c_file, const char* mode) {
+    ObjFile* file = ALLOCATE_OBJ(ObjFile, OBJ_FILE);
+    file->file = c_file;
+    file->mode = copyString(mode, strlen(mode))->chars;
+    file->is_Open = (c_file != NULL);
+    return file;
+}
+
 ObjClosure* newClosure(ObjFunction* function) {
   ObjUpvalue** upvalues = ALLOCATE(ObjUpvalue*, function->upvalueCount);
   for (int i = 0; i < function->upvalueCount; i++) {
@@ -154,6 +162,9 @@ void printObject(Value value) {
       break;
     case OBJ_ARRAY:
     printf("[array]");
+    break;
+    case OBJ_FILE:
+    printf("<file %p>", (void*)AS_FILE(value)->file);
     break;
   }
 }

@@ -1,14 +1,10 @@
 #ifndef om2_object_h
 #define om2_object_h
-
+#include <stdio.h>
 #include "common.h"
 #include "value.h"
 #include "chunk.h"
 #include "table.h"
-
-/* =======================
-   Forward Declarations
-   ======================= */
 
 typedef struct Obj Obj;
 typedef struct ObjString ObjString;
@@ -19,10 +15,6 @@ typedef struct ObjNative ObjNative;
 typedef struct ObjClass ObjClass;
 typedef struct ObjInstance ObjInstance;
 typedef struct ObjBoundMethod ObjBoundMethod;
-
-/* =======================
-   Macros
-   ======================= */
 
 #define OBJ_TYPE(value)        (AS_OBJ(value)->type)
 
@@ -44,7 +36,8 @@ typedef struct ObjBoundMethod ObjBoundMethod;
 #define AS_CSTRING(value)      (((ObjString*)AS_OBJ(value))->chars)
 #define IS_ARRAY(value)        isObjType(value, OBJ_ARRAY)
 #define AS_ARRAY(value)        ((ObjArray*)AS_OBJ(value))
-
+#define IS_FILE(value)        isObjType(value, OBJ_FILE)
+#define AS_FILE(value)        ((ObjFile*)AS_OBJ(value))
 
 
 typedef enum {
@@ -56,7 +49,8 @@ typedef enum {
   OBJ_ARRAY,
   OBJ_FUNCTION,
   OBJ_STRING,
-  OBJ_UPVALUE
+  OBJ_UPVALUE,
+  OBJ_FILE
 } ObjType;
 
 
@@ -66,7 +60,12 @@ struct Obj {
   bool isMarked;
   struct Obj* next;
 };
-
+typedef struct {
+  Obj obj;
+  FILE* file;
+  char* mode;
+  bool is_Open;
+} ObjFile;
 
 struct ObjFunction {
   Obj obj;
@@ -149,6 +148,7 @@ ObjUpvalue* newUpvalue(Value* slot);
 ObjInstance* newInstance(ObjClass* klass);
 ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method);
 ObjArray* newArray();
+ObjFile* newFile(FILE* c_file, const char* mode);
 void printObject(Value value);
 
 static inline bool isObjType(Value value, ObjType type) {
