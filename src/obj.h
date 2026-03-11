@@ -15,6 +15,7 @@ typedef struct ObjNative ObjNative;
 typedef struct ObjClass ObjClass;
 typedef struct ObjInstance ObjInstance;
 typedef struct ObjBoundMethod ObjBoundMethod;
+typedef struct ObjMatrix ObjMatrix;
 
 #define OBJ_TYPE(value)        (AS_OBJ(value)->type)
 
@@ -38,7 +39,8 @@ typedef struct ObjBoundMethod ObjBoundMethod;
 #define AS_ARRAY(value)        ((ObjArray*)AS_OBJ(value))
 #define IS_FILE(value)        isObjType(value, OBJ_FILE)
 #define AS_FILE(value)        ((ObjFile*)AS_OBJ(value))
-
+#define IS_MATRIX(value)     isObjType(value, OBJ_MATRIX)
+#define AS_MATRIX(value)     ((ObjMatrix*)AS_OBJ(value))
 
 typedef enum {
   OBJ_BOUND_METHOD,
@@ -50,7 +52,8 @@ typedef enum {
   OBJ_FUNCTION,
   OBJ_STRING,
   OBJ_UPVALUE,
-  OBJ_FILE
+  OBJ_FILE,
+  OBJ_MATRIX
 } ObjType;
 
 
@@ -66,6 +69,16 @@ typedef struct {
   char* mode;
   bool is_Open;
 } ObjFile;
+
+struct ObjMatrix 
+{
+    Obj obj;
+    int rows;
+    int cols;
+    int count;
+    Value* data;
+};
+
 
 struct ObjFunction {
   Obj obj;
@@ -149,6 +162,7 @@ ObjInstance* newInstance(ObjClass* klass);
 ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method);
 ObjArray* newArray();
 ObjFile* newFile(FILE* c_file, const char* mode);
+ObjMatrix* newMatrix(int rows, int cols);
 void printObject(Value value);
 
 static inline bool isObjType(Value value, ObjType type) {

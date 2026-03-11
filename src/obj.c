@@ -117,6 +117,17 @@ ObjUpvalue* newUpvalue(Value* slot) {
   upvalue->next = NULL;
   return upvalue;
 }
+ObjMatrix* newMatrix(int rows, int cols) {
+    ObjMatrix* matrix = ALLOCATE_OBJ(ObjMatrix, OBJ_MATRIX);
+    matrix->rows = rows;
+    matrix->cols = cols;
+    matrix->count = rows * cols;
+    matrix->data = ALLOCATE(Value, matrix->count);
+    for (int i = 0; i < matrix->count; i++) {
+        matrix->data[i] = NIL_VAL;
+    }
+    return matrix;
+}
 static void printFunction(ObjFunction* function) {
   if (function->name == NULL) {
   printf("<script>");

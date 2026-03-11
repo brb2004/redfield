@@ -432,10 +432,285 @@ static Value fileExistsNative(int argCount, Value* args) {
 static Value fileFlushNative(int argCount, Value* args) {
     if (argCount != 1 || !IS_FILE(args[0])) return NIL_VAL;
     ObjFile* file = AS_FILE(args[0]);
-    if (file->is_open && file->file != NULL) {
-        fflush(file->file);  // Force write to disk
+    if (file->is_Open && file->file != NULL) {
+        fflush(file->file); 
     }
     return NIL_VAL;
+}
+static Value readCSV(int argCount, Value* args) {
+    if (argCount != 1 || !IS_STRING(args[0])) {
+        runtimeError("readCSV expects a string filename");
+        return NIL_VAL;
+    }
+    
+    const char* filename = AS_CSTRING(args[0]);
+    FILE* file = fopen(filename, "r");
+    if (!file) {
+        runtimeError("Could not open file '%s'", filename);
+        return NIL_VAL;
+    }
+    
+    ObjArray* rows = newArray();
+    push(OBJ_VAL(rows));
+    
+    char line[1024];
+    if (fgets(line, sizeof(line), file)) {
+        ObjArray* headers = newArray();
+        push(OBJ_VAL(headers));
+        
+        char* token = strtok(line, ",\n");
+        while (token) {
+            size_t len = strlen(token);
+            if (len > 0 && (token[len-1] == '\n' || token[len-1] == '\r')) {
+                token[len-1] = '\0';
+            }
+            
+            Value header = OBJ_VAL(copyString(token, strlen(token)));
+            
+            if (headers->count >= headers->capacity) {
+                int newCap = headers->capacity < 8 ? 8 : headers->capacity * 2;
+                headers->items = GROW_ARRAY(Value, headers->items, headers->capacity, newCap);
+                headers->capacity = newCap;
+            }
+            headers->items[headers->count++] = header;
+            
+            token = strtok(NULL, ",\n");
+        }
+        
+        if (rows->count >= rows->capacity) {
+            int newCap = rows->capacity < 8 ? 8 : rows->capacity * 2;
+            rows->items = GROW_ARRAY(Value, rows->items, rows->capacity, newCap);
+            rows->capacity = newCap;
+        }
+        rows->items[rows->count++] = OBJ_VAL(headers);
+        
+        pop();
+    }
+    
+
+    while (fgets(line, sizeof(line), file)) {
+        ObjArray* row = newArray();
+        push(OBJ_VAL(row));
+        
+        char* token = strtok(line, ",\n");
+        while (token) {
+            size_t len = strlen(token);
+            if (len > 0 && (token[len-1] == '\n' || token[len-1] == '\r')) {
+                token[len-1] = '\0';
+            }
+            
+            char* endptr;
+            double num = strtod(token, &endptr);
+            Value cell;
+            if (*endptr == '\0') {
+                cell = NUMBER_VAL(num);
+            } else {
+                cell = OBJ_VAL(copyString(token, strlen(token)));
+            }
+            
+            if (row->count >= row->capacity) {
+                int newCap = row->capacity < 8 ? 8 : row->capacity * 2;
+                row->items = GROW_ARRAY(Value, row->items, row->capacity, newCap);
+                row->capacity = newCap;
+            }
+            row->items[row->count++] = cell;
+            
+            token = strtok(NULL, ",\n");
+        }
+        
+        if (rows->count >= rows->capacity) {
+            int newCap = rows->capacity < 8 ? 8 : rows->capacity * 2;
+            rows->items = GROW_ARRAY(Value, rows->items, rows->capacity, newCap);
+            rows->capacity = newCap;
+        }
+        rows->items[rows->count++] = OBJ_VAL(row);
+        
+        pop(); 
+    }
+    
+    fclose(file);
+    pop(); 
+    return OBJ_VAL(rows);
+}
+static Value matrixNewNative(int argCount, Value* args) {
+    if (argCount != 2) {
+        runtimeError("matrixNew expects 2 arguments (rows, cols)");
+        return NIL_VAL;
+    }
+    
+    if (!IS_NUMBER(args[0]) || !IS_NUMBER(args[1])) {
+        runtimeError("matrixNew: rows and cols must be numbers");
+        return NIL_VAL;
+    }
+    
+    int rows = (int)AS_NUMBER(args[0]);
+    int cols = (int)AS_NUMBER(args[1]);
+    
+    if (rows <= 0 || cols <= 0) {
+        runtimeError("matrixNew: rows and cols must be positive");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* matrix = newMatrix(rows, cols);
+    return OBJ_VAL(matrix);
+}
+
+static Value matrixGetNative(int argCount, Value* args) {
+    if (argCount != 3) {
+        runtimeError("matrixGet expects 3 arguments (matrix, row, col)");
+        return NIL_VAL;
+    }
+    
+    if (!IS_MATRIX(args[0])) {
+        runtimeError("matrixGet: first argument must be a matrix");
+        return NIL_VAL;
+    }
+    
+    if (!IS_NUMBER(args[1]) || !IS_NUMBER(args[2])) {
+        runtimeError("matrixGet: row and col must be numbers");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* matrix = AS_MATRIX(args[0]);
+    int row = (int)AS_NUMBER(args[1]);
+    int col = (int)AS_NUMBER(args[2]);
+    
+    if (row < 0 || row >= matrix->rows || col < 0 || col >= matrix->cols) {
+        runtimeError("matrixGet: index out of bounds");
+        return NIL_VAL;
+    }
+    
+    int index = row * matrix->cols + col;
+    return matrix->data[index];
+}
+
+static Value matrixSetNative(int argCount, Value* args) {
+    if (argCount != 4) {
+        runtimeError("matrixSet expects 4 arguments (matrix, row, col, value)");
+        return NIL_VAL;
+    }
+    
+    if (!IS_MATRIX(args[0])) {
+        runtimeError("matrixSet: first argument must be a matrix");
+        return NIL_VAL;
+    }
+    
+    if (!IS_NUMBER(args[1]) || !IS_NUMBER(args[2])) {
+        runtimeError("matrixSet: row and col must be numbers");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* matrix = AS_MATRIX(args[0]);
+    int row = (int)AS_NUMBER(args[1]);
+    int col = (int)AS_NUMBER(args[2]);
+    Value value = args[3];
+    
+    if (row < 0 || row >= matrix->rows || col < 0 || col >= matrix->cols) {
+        runtimeError("matrixSet: index out of bounds");
+        return NIL_VAL;
+    }
+    
+    int index = row * matrix->cols + col;
+    matrix->data[index] = value;
+    return value;
+}
+
+static Value matrixRowsNative(int argCount, Value* args) {
+    if (argCount != 1 || !IS_MATRIX(args[0])) {
+        runtimeError("matrixRows expects a matrix");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* matrix = AS_MATRIX(args[0]);
+    return NUMBER_VAL(matrix->rows);
+}
+
+static Value matrixColsNative(int argCount, Value* args) {
+    if (argCount != 1 || !IS_MATRIX(args[0])) {
+        runtimeError("matrixCols expects a matrix");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* matrix = AS_MATRIX(args[0]);
+    return NUMBER_VAL(matrix->cols);
+}
+
+static Value matrixAddNative(int argCount, Value* args) {
+    if (argCount != 2) {
+        runtimeError("matrixAdd expects 2 matrices");
+        return NIL_VAL;
+    }
+    
+    if (!IS_MATRIX(args[0]) || !IS_MATRIX(args[1])) {
+        runtimeError("matrixAdd: arguments must be matrices");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* a = AS_MATRIX(args[0]);
+    ObjMatrix* b = AS_MATRIX(args[1]);
+    
+    if (a->rows != b->rows || a->cols != b->cols) {
+        runtimeError("matrixAdd: matrices must have same dimensions");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* result = newMatrix(a->rows, a->cols);
+    
+    for (int i = 0; i < a->count; i++) {
+        if (!IS_NUMBER(a->data[i]) || !IS_NUMBER(b->data[i])) {
+            runtimeError("matrixAdd: all elements must be numbers");
+            return NIL_VAL;
+        }
+        double av = AS_NUMBER(a->data[i]);
+        double bv = AS_NUMBER(b->data[i]);
+        result->data[i] = NUMBER_VAL(av + bv);
+    }
+    
+    return OBJ_VAL(result);
+}
+
+static Value matrixMulNative(int argCount, Value* args) {
+    if (argCount != 2) {
+        runtimeError("matrixMul expects 2 matrices");
+        return NIL_VAL;
+    }
+    
+    if (!IS_MATRIX(args[0]) || !IS_MATRIX(args[1])) {
+        runtimeError("matrixMul: arguments must be matrices");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* a = AS_MATRIX(args[0]);
+    ObjMatrix* b = AS_MATRIX(args[1]);
+    
+    if (a->cols != b->rows) {
+        runtimeError("matrixMul: incompatible dimensions (%dx%d * %dx%d)",
+                     a->rows, a->cols, b->rows, b->cols);
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* result = newMatrix(a->rows, b->cols);
+    
+    // Matrix multiplication
+    for (int i = 0; i < a->rows; i++) {
+        for (int j = 0; j < b->cols; j++) {
+            double sum = 0;
+            for (int k = 0; k < a->cols; k++) {
+                Value av = a->data[i * a->cols + k];
+                Value bv = b->data[k * b->cols + j];
+                
+                if (!IS_NUMBER(av) || !IS_NUMBER(bv)) {
+                    runtimeError("matrixMul: all elements must be numbers");
+                    return NIL_VAL;
+                }
+                
+                sum += AS_NUMBER(av) * AS_NUMBER(bv);
+            }
+            result->data[i * result->cols + j] = NUMBER_VAL(sum);
+        }
+    }
+    
+    return OBJ_VAL(result);
 }
 void registerNatives() {
     
@@ -489,5 +764,13 @@ void registerNatives() {
     defineNative("fileIsOpen",    fileIsOpenNative);
     defineNative("fileExists",    fileExistsNative);
     defineNative("fileFlush",     fileFlushNative);
+    defineNative("readCSV",       readCSV);
+    defineNative("matrixNew",     matrixNewNative);
+    defineNative("matrixGet",     matrixGetNative);
+    defineNative("matrixSet",     matrixSetNative);
+    defineNative("matrixRows",    matrixRowsNative);
+    defineNative("matrixCols",    matrixColsNative);
+    defineNative("matrixAdd",     matrixAddNative);
+    defineNative("matrixMul",     matrixMulNative);
     srand((unsigned int)time(NULL));
 }

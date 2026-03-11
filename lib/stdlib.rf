@@ -556,3 +556,68 @@ class Complex {
         print numToString(this.r) + " + " + numToString(this.i) + "i";
     }
 }
+class Matrix {
+    init(rows, cols) {
+        this.handle = matrixNew(rows, cols);
+    }
+    
+    get(row, col) {
+        return matrixGet(this.handle, row, col);
+    }
+    
+    set(row, col, value) {
+        return matrixSet(this.handle, row, col, value);
+    }
+    
+    rows() {
+        return matrixRows(this.handle);
+    }
+    
+    cols() {
+        return matrixCols(this.handle);
+    }
+    
+    add(other) {
+        return Matrix.fromHandle(matrixAdd(this.handle, other.handle));
+    }
+    
+    mul(other) {
+        return Matrix.fromHandle(matrixMul(this.handle, other.handle));
+    }
+    
+    // Static method to create from handle
+    static fromHandle(handle) {
+        var m = Matrix(1, 1);  // Dummy
+        m.handle = handle;
+        return m;
+    }
+    
+    // Create from 2D array
+    static fromArray(arr) {
+        var rows = len(arr);
+        var cols = len(arr[0]);
+        var m = Matrix(rows, cols);
+        for (var i = 0; i < rows; i = i + 1) {
+            for (var j = 0; j < cols; j = j + 1) {
+                m.set(i, j, arr[i][j]);
+            }
+        }
+        return m;
+    }
+    
+    toString() {
+        var result = "[";
+        for (var i = 0; i < this.rows(); i = i + 1) {
+            if (i > 0) result = result + " ";
+            result = result + "[";
+            for (var j = 0; j < this.cols(); j = j + 1) {
+                if (j > 0) result = result + ", ";
+                result = result + numToString(this.get(i, j));
+            }
+            result = result + "]";
+            if (i < this.rows() - 1) result = result + "\n";
+        }
+        result = result + "]";
+        return result;
+    }
+}
