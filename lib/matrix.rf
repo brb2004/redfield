@@ -1,0 +1,55 @@
+class Matrix {
+    init(rows, cols) {
+        this.handle = matrixNew(rows, cols);
+    }
+    
+    get(row, col) {
+        return matrixGet(this.handle, row, col);
+    }
+    
+    set(row, col, value) {
+        return matrixSet(this.handle, row, col, value);
+    }
+    
+    rows() {
+        return matrixRows(this.handle);
+    }
+    
+    cols() {
+        return matrixCols(this.handle);
+    }
+    
+    transpose() {
+        return Matrix_fromHandle(matrixTranspose(this.handle));
+    }
+    
+    elementwise_multiply(other) {
+        return Matrix_fromHandle(matrixElementwiseMultiply(this.handle, other.handle));
+    }
+    
+    sum() {
+        return matrixSum(this.handle);
+    }
+    
+    mean() {
+        return matrixMean(this.handle);
+    }
+    
+    row_sum() {
+        return matrixRowSum(this.handle);
+    }
+    
+    col_sum() {
+        return matrixColSum(this.handle);
+    }
+    
+    toString() {
+        return "Matrix(" + numToString(this.rows()) + "x" + numToString(this.cols()) + ")";
+    }
+}
+
+fun Matrix_fromHandle(handle) {
+    var m = Matrix(1, 1);
+    m.handle = handle;
+    return m;
+}

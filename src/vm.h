@@ -40,4 +40,5 @@ void freeVM();
 InterpretResult interpret(const char* source);
 void push(Value value);
 Value pop();
+bool call(ObjClosure* closure, int argCount);
 #endif

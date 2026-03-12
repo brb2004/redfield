@@ -712,6 +712,181 @@ static Value matrixMulNative(int argCount, Value* args) {
     
     return OBJ_VAL(result);
 }
+static Value matrixTransposeNative(int argCount, Value* args) {
+    if (argCount != 1 || !IS_MATRIX(args[0])) {
+        runtimeError("matrixTranspose expects a matrix");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* a = AS_MATRIX(args[0]);
+    ObjMatrix* result = newMatrix(a->cols, a->rows);
+    
+    for (int i = 0; i < a->rows; i++) {
+        for (int j = 0; j < a->cols; j++) {
+            int a_index = i * a->cols + j;
+            int r_index = j * result->cols + i;
+            result->data[r_index] = a->data[a_index];
+        }
+    }
+    
+    return OBJ_VAL(result);
+}
+
+static Value matrixElementwiseMultiplyNative(int argCount, Value* args) {
+    if (argCount != 2 || !IS_MATRIX(args[0]) || !IS_MATRIX(args[1])) {
+        runtimeError("matrixElementwiseMultiply expects two matrices");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* a = AS_MATRIX(args[0]);
+    ObjMatrix* b = AS_MATRIX(args[1]);
+    
+    if (a->rows != b->rows || a->cols != b->cols) {
+        runtimeError("matrixElementwiseMultiply: matrices must have same dimensions");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* result = newMatrix(a->rows, a->cols);
+    
+    for (int i = 0; i < a->count; i++) {
+        if (!IS_NUMBER(a->data[i]) || !IS_NUMBER(b->data[i])) {
+            runtimeError("matrixElementwiseMultiply: all elements must be numbers");
+            return NIL_VAL;
+        }
+        double av = AS_NUMBER(a->data[i]);
+        double bv = AS_NUMBER(b->data[i]);
+        result->data[i] = NUMBER_VAL(av * bv);
+    }
+    
+    return OBJ_VAL(result);
+}
+
+static Value matrixApplyNative(int argCount, Value* args) {
+    if (argCount != 2 || !IS_MATRIX(args[0]) || !IS_CLOSURE(args[1])) {
+        runtimeError("matrixApply expects a matrix and a function");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* a = AS_MATRIX(args[0]);
+    ObjClosure* func = AS_CLOSURE(args[1]);
+    
+    ObjMatrix* result = newMatrix(a->rows, a->cols);
+    
+    push(OBJ_VAL(result));
+    push(OBJ_VAL(func));
+    
+    for (int i = 0; i < a->count; i++) {
+        if (!IS_NUMBER(a->data[i])) {
+            runtimeError("matrixApply: all elements must be numbers");
+            pop();
+            pop();
+            return NIL_VAL;
+        }
+        
+        push(OBJ_VAL(func));
+        push(a->data[i]);
+        if (!call(func, 1)) { 
+            pop();
+            pop();
+            return NIL_VAL;
+        }
+        Value val = pop();
+        result->data[i] = val;
+    }
+    
+    pop();
+    pop();
+    return OBJ_VAL(result);
+}
+static Value matrixSumNative(int argCount, Value* args) {
+    if (argCount != 1 || !IS_MATRIX(args[0])) {
+        runtimeError("matrixSum expects a matrix");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* a = AS_MATRIX(args[0]);
+    double sum = 0;
+    
+    for (int i = 0; i < a->count; i++) {
+        if (!IS_NUMBER(a->data[i])) {
+            runtimeError("matrixSum: all elements must be numbers");
+            return NIL_VAL;
+        }
+        sum += AS_NUMBER(a->data[i]);
+    }
+    
+    return NUMBER_VAL(sum);
+}
+
+static Value matrixMeanNative(int argCount, Value* args) {
+    if (argCount != 1 || !IS_MATRIX(args[0])) {
+        runtimeError("matrixMean expects a matrix");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* a = AS_MATRIX(args[0]);
+    double sum = 0;
+    
+    for (int i = 0; i < a->count; i++) {
+        if (!IS_NUMBER(a->data[i])) {
+            runtimeError("matrixMean: all elements must be numbers");
+            return NIL_VAL;
+        }
+        sum += AS_NUMBER(a->data[i]);
+    }
+    
+    return NUMBER_VAL(sum / a->count);
+}
+
+static Value matrixRowSumNative(int argCount, Value* args) {
+    if (argCount != 1 || !IS_MATRIX(args[0])) {
+        runtimeError("matrixRowSum expects a matrix");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* a = AS_MATRIX(args[0]);
+    ObjMatrix* result = newMatrix(a->rows, 1);
+    
+    for (int i = 0; i < a->rows; i++) {
+        double sum = 0;
+        for (int j = 0; j < a->cols; j++) {
+            int index = i * a->cols + j;
+            if (!IS_NUMBER(a->data[index])) {
+                runtimeError("matrixRowSum: all elements must be numbers");
+                return NIL_VAL;
+            }
+            sum += AS_NUMBER(a->data[index]);
+        }
+        result->data[i] = NUMBER_VAL(sum);
+    }
+    
+    return OBJ_VAL(result);
+}
+
+static Value matrixColSumNative(int argCount, Value* args) {
+    if (argCount != 1 || !IS_MATRIX(args[0])) {
+        runtimeError("matrixColSum expects a matrix");
+        return NIL_VAL;
+    }
+    
+    ObjMatrix* a = AS_MATRIX(args[0]);
+    ObjMatrix* result = newMatrix(1, a->cols);
+    
+    for (int j = 0; j < a->cols; j++) {
+        double sum = 0;
+        for (int i = 0; i < a->rows; i++) {
+            int index = i * a->cols + j;
+            if (!IS_NUMBER(a->data[index])) {
+                runtimeError("matrixColSum: all elements must be numbers");
+                return NIL_VAL;
+            }
+            sum += AS_NUMBER(a->data[index]);
+        }
+        result->data[j] = NUMBER_VAL(sum);
+    }
+    
+    return OBJ_VAL(result);
+}
 void registerNatives() {
     
     defineNative("windowShouldClose", windowShouldCloseNative);
@@ -772,5 +947,12 @@ void registerNatives() {
     defineNative("matrixCols",    matrixColsNative);
     defineNative("matrixAdd",     matrixAddNative);
     defineNative("matrixMul",     matrixMulNative);
+    defineNative("matrixTranspose",          matrixTransposeNative);
+    defineNative("matrixElementwiseMultiply", matrixElementwiseMultiplyNative);
+    defineNative("matrixApply",               matrixApplyNative);
+    defineNative("matrixSum",                 matrixSumNative);
+    defineNative("matrixMean",                matrixMeanNative);
+    defineNative("matrixRowSum",              matrixRowSumNative);
+    defineNative("matrixColSum",              matrixColSumNative);
     srand((unsigned int)time(NULL));
 }

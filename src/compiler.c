@@ -261,7 +261,7 @@ static void binary(bool canAssign) {
     default: return; 
   }
 }
-static void call(bool canAssign) {
+static void callExpr(bool canAssign) {
   UNUSED(canAssign);
   uint8_t argCount = argumentList();
   emitBytes(OP_CALL, argCount);
@@ -413,7 +413,7 @@ static void subscript(bool canAssign) {
     }
 }
 ParseRule rules[] = {
-  [TOKEN_LEFT_PAREN]    = {grouping, call,   PREC_CALL},
+  [TOKEN_LEFT_PAREN]    = {grouping, callExpr,   PREC_CALL},
   [TOKEN_RIGHT_PAREN]   = {NULL,     NULL,   PREC_NONE},
   [TOKEN_LEFT_BRACE]    = {NULL,     NULL,   PREC_NONE}, 
   [TOKEN_RIGHT_BRACE]   = {NULL,     NULL,   PREC_NONE},
