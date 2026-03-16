@@ -194,6 +194,7 @@ Token scanToken() {
       return makeToken(
           match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
     case '"': return string();
+    case '%': return makeToken(TOKEN_PERCENT);
   }
 
   return errorToken("Unexpected character.");

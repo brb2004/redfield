@@ -90,10 +90,15 @@ static void blackenObject(Obj* object) {
       markObject((Obj*)bound->method);
       break;
     }
-    case OBJ_FILE: {
-    ObjFile* file = (ObjFile*)object;
-    break;
+    case OBJ_MATRIX: {
+        ObjMatrix* matrix = (ObjMatrix*)object;
+        for (int i = 0; i < matrix->count; i++) {
+            markValue(matrix->data[i]);
+        }
+        break;
     }
+    case OBJ_FILE:
+        break;
     case OBJ_INSTANCE: {
       ObjInstance* instance = (ObjInstance*)object;
       markObject((Obj*)instance->klass);
@@ -274,6 +279,12 @@ static void freeObject(Obj* object) {
     FREE_ARRAY(Value, array->items, array->capacity);
     FREE(ObjArray, object);
     break;
+    }
+    case OBJ_MATRIX: {
+        ObjMatrix* matrix = (ObjMatrix*)object;
+        FREE_ARRAY(Value, matrix->data, matrix->count);
+        FREE(ObjMatrix, object);
+        break;
     }
     case OBJ_FILE: {
     ObjFile* file = (ObjFile*)object;

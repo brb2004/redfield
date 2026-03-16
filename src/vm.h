@@ -11,6 +11,7 @@ typedef struct {
   ObjClosure* closure;
   uint8_t* ip;
   Value* slots;
+  const char* filePath;
 } CallFrame;
 typedef struct {
   CallFrame frames[FRAMES_MAX];
@@ -27,6 +28,7 @@ typedef struct {
   int grayCount;
   int grayCapacity;
   Obj** grayStack;
+  const char* currentFilePath;
 } VM;
 typedef enum {
   INTERPRET_OK,

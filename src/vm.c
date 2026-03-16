@@ -86,7 +86,7 @@ static Value peek(int distance) {
   return vm.stackTop[-1 - distance];
 }
 
-static bool call(ObjClosure* closure, int argCount) {
+bool call(ObjClosure* closure, int argCount) {
   if (argCount != closure->function->arity) {
     runtimeError("Expected %d arguments but got %d.",
                  closure->function->arity, argCount);
@@ -100,8 +100,9 @@ static bool call(ObjClosure* closure, int argCount) {
   frame->closure = closure;
   frame->ip      = closure->function->chunk.code;
   frame->slots   = vm.stackTop - argCount - 1;
+  frame->filePath = vm.currentFilePath;
   return true;
-}
+  }
 
 static bool callValue(Value callee, int argCount) {
   if (IS_OBJ(callee)) {
@@ -238,7 +239,33 @@ static inline uint8_t readByte(CallFrame* frame) {
   }
   return *frame->ip++;
 }
-
+static void normalizePath(char* path) {
+    char result[1024] = {0};
+    char temp[1024];
+    strncpy(temp, path, sizeof(temp));
+    
+    char* parts[100];
+    int count = 0;
+    
+    char* p = temp;
+    char* token;
+    while ((token = strtok(p, "/")) != NULL) {
+        p = NULL;
+        if (strcmp(token, "..") == 0) {
+            if (count > 0) count--;
+        } else if (strcmp(token, ".") != 0 && strlen(token) > 0) {
+            parts[count++] = token;
+        }
+    }
+    
+    result[0] = '\0';
+    for (int i = 0; i < count; i++) {
+        if (i > 0) strcat(result, "/");
+        strcat(result, parts[i]);
+    }
+    
+    strncpy(path, result, 1024);
+}
 static InterpretResult run() {
 #define READ_BYTE()      readByte(frame)
 #define READ_SHORT() \
@@ -412,6 +439,12 @@ static InterpretResult run() {
       case OP_SUBTRACT: BINARY_OP(NUMBER_VAL, -); break;
       case OP_MULTIPLY: BINARY_OP(NUMBER_VAL, *); break;
       case OP_DIVIDE:   BINARY_OP(NUMBER_VAL, /); break;
+      case OP_MODULO: {
+      double b = AS_NUMBER(pop());
+      double a = AS_NUMBER(pop());
+      push(NUMBER_VAL(fmod(a, b)));
+      break;
+}
       case OP_NOT:
         push(BOOL_VAL(isFalsey(pop())));
         break;
@@ -485,52 +518,60 @@ static InterpretResult run() {
         }
         vm.stackTop = frame->slots;
         push(result);
-        
         frame = &vm.frames[vm.frameCount - 1];
+        vm.currentFilePath = frame->filePath;
         break;
       }
-
-      case OP_IMPORT: {
-        ObjString* path = AS_STRING(READ_CONSTANT());
-
-        FILE* file = fopen(path->chars, "rb");
-        if (file == NULL) {
-            runtimeError("Could not open module '%s'.", path->chars);
-            return INTERPRET_RUNTIME_ERROR;
+case OP_IMPORT: {
+    ObjString* path = AS_STRING(READ_CONSTANT());
+    char fullPath[1024];
+    
+    if (path->chars[0] == '/') {
+        snprintf(fullPath, sizeof(fullPath), "%s", path->chars);
+    } else {
+        const char* slash = strrchr(vm.currentFilePath, '/');
+        if (slash != NULL) {
+            int dirLen = (int)(slash - vm.currentFilePath) + 1;
+            snprintf(fullPath, sizeof(fullPath), "%.*s%s", dirLen, vm.currentFilePath, path->chars);
+        } else {
+            snprintf(fullPath, sizeof(fullPath), "%s", path->chars);
         }
-        fseek(file, 0L, SEEK_END);
-        size_t size = ftell(file);
-        rewind(file);
-        char* source = (char*)malloc(size + 1);
-        fread(source, sizeof(char), size, file);
-        source[size] = '\0';
-        fclose(file);
-        ObjFunction* function = compile(source);
-        free(source);
-        if (function == NULL) return INTERPRET_COMPILE_ERROR;
-
-        ObjClosure* closure = newClosure(function);
-        push(OBJ_VAL(closure));
-        callValue(OBJ_VAL(closure), 0);
-        break;
     }
-          
-      
-      case OP_INVOKE: {
-        ObjString* method   = READ_STRING();
-        int        argCount = READ_BYTE();
-        if (!invoke(method, argCount))
-          return INTERPRET_RUNTIME_ERROR;
-        frame = &vm.frames[vm.frameCount - 1];
-        break;
-      }
+    
+    normalizePath(fullPath);
+    fprintf(stderr, "DEBUG: currentFilePath='%s' import='%s' -> fullPath='%s'\n",
+    vm.currentFilePath, path->chars, fullPath);
+    FILE* file = fopen(fullPath, "rb");
+    if (file == NULL) {
+        runtimeError("Could not open module '%s'.", fullPath);
+        return INTERPRET_RUNTIME_ERROR;
+    }
+    fseek(file, 0L, SEEK_END);
+    size_t size = ftell(file);
+    rewind(file);
+    char* source = (char*)malloc(size + 1);
+    fread(source, sizeof(char), size, file);
+    source[size] = '\0';
+    fclose(file);
 
-      
-      
-      
-      case OP_CLASS:
-        push(OBJ_VAL(newClass(READ_STRING())));
-        break;
+    const char* previousPath = vm.currentFilePath;
+    vm.currentFilePath = strdup(fullPath); 
+
+    ObjFunction* function = compile(source);
+    free(source);
+    if (function == NULL) return INTERPRET_COMPILE_ERROR;
+
+    ObjClosure* closure = newClosure(function);
+    push(OBJ_VAL(closure));
+    callValue(OBJ_VAL(closure), 0);
+    frame = &vm.frames[vm.frameCount - 1];
+    frame->filePath = strdup(fullPath);
+    vm.currentFilePath = frame->filePath;
+    break;
+    }
+    case OP_CLASS:
+      push(OBJ_VAL(newClass(READ_STRING())));
+      break;
       case OP_INHERIT: {
         Value superclass = peek(1);
         if (!IS_CLASS(superclass)) {
@@ -552,6 +593,14 @@ static InterpretResult run() {
           return INTERPRET_RUNTIME_ERROR;
         break;
       }
+      case OP_INVOKE: {
+        ObjString* method = READ_STRING();
+        int argCount = READ_BYTE();
+        if (!invoke(method, argCount))
+            return INTERPRET_RUNTIME_ERROR;
+        frame = &vm.frames[vm.frameCount - 1];
+        break;
+}
       case OP_SUPER_INVOKE: {
         ObjString* method     = READ_STRING();
         int        argCount   = READ_BYTE();

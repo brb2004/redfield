@@ -35,6 +35,7 @@ typedef enum {
   OP_DIVIDE,
   OP_NOT,
   OP_NEGATE,
+ 
 
   OP_PRINT,
   OP_JUMP,
@@ -56,6 +57,7 @@ typedef enum {
   OP_CLASS,
   OP_INHERIT,
   OP_METHOD,
+  OP_MODULO,
   OP_IMPORT
 } OpCode;
 

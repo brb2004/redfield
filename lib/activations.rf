@@ -1,0 +1,27 @@
+// Activation functions
+fun sigmoid(x) {
+    return 1 / (1 + exp(-x));
+}
+
+fun sigmoid_derivative(x) {
+    // For a sigmoid output s, derivative is s * (1 - s)
+    var s = sigmoid(x);
+    return s * (1 - s);
+}
+
+fun relu(x) {
+    if (x > 0) return x;
+    return 0;
+}
+
+fun relu_derivative(x) {
+    if (x > 0) return 1;
+    return 0;
+}
+
+// Loss functions
+fun mse_loss(predicted, actual) {
+    var diff = predicted.sub(actual);
+    var sq = diff.elementwise_multiply(diff);
+    return sq.sum() / (2 * predicted.rows());  // average over batch
+}

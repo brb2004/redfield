@@ -2,7 +2,25 @@ class Matrix {
     init(rows, cols) {
         this.handle = matrixNew(rows, cols);
     }
-    
+    mul(other) {
+    return Matrix_fromHandle(matrixMul(this.handle, other.handle));
+    }
+    add(other) {
+        return Matrix_fromHandle(matrixAdd(this.handle, other.handle));
+    }
+    sub(other) {
+        return Matrix_fromHandle(matrixSub(this.handle, other.handle));
+    }
+    scale(scalar) {
+        return Matrix_fromHandle(matrixScale(this.handle, scalar));
+    }
+    apply(func) {
+        if (func == "sigmoid") return Matrix_fromHandle(matrixSigmoid(this.handle));
+        if (func == "sigmoid_derivative") return Matrix_fromHandle(matrixSigmoidDeriv(this.handle));
+        if (func == "relu") return Matrix_fromHandle(matrixRelu(this.handle));
+        if (func == "relu_derivative") return Matrix_fromHandle(matrixReluDeriv(this.handle));
+        return nil;
+    }
     get(row, col) {
         return matrixGet(this.handle, row, col);
     }
@@ -36,11 +54,11 @@ class Matrix {
     }
     
     row_sum() {
-        return matrixRowSum(this.handle);
+        return Matrix_fromHandle(matrixRowSum(this.handle));
     }
-    
+
     col_sum() {
-        return matrixColSum(this.handle);
+        return Matrix_fromHandle(matrixColSum(this.handle));
     }
     
     toString() {
@@ -52,4 +70,7 @@ fun Matrix_fromHandle(handle) {
     var m = Matrix(1, 1);
     m.handle = handle;
     return m;
+}
+fun Matrix_fromHandle(handle) {
+    return handle;
 }

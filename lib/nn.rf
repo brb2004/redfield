@@ -1,0 +1,64 @@
+import "layer.rf";
+import "activations.rf";
+
+class NeuralNetwork {
+    init(layers_config) {
+        // layers_config is an array of [input_size, output_size, activation]
+        this.layers = [];
+        for (var i = 0; i < len(layers_config); i = i + 1) {
+            var conf = layers_config[i];
+            var layer = Layer(conf[0], conf[1], conf[2]);
+            arrayPush(this.layers, layer);
+        }
+    }
+    
+    forward(input) {
+        var output = input;
+        for (var i = 0; i < len(this.layers); i = i + 1) {
+            output = this.layers[i].forward(output);
+        }
+        return output;
+    }
+    
+train(X, y, epochs, learning_rate) {
+    for (var epoch = 0; epoch < epochs; epoch = epoch + 1) {
+        var total_loss = 0;
+
+        for (var s = 0; s < X.rows(); s = s + 1) {
+            // Extract sample as column vector (input_size x 1)
+            var input = Matrix(X.cols(), 1);
+            for (var j = 0; j < X.cols(); j = j + 1) {
+                input.set(j, 0, X.get(s, j));
+            }
+
+            // Extract target as column vector (output_size x 1)
+            var target = Matrix(y.cols(), 1);
+            for (var j = 0; j < y.cols(); j = j + 1) {
+                target.set(j, 0, y.get(s, j));
+            }
+
+            // Forward pass
+            var prediction = this.forward(input);
+
+            // Compute loss
+            var diff = prediction.sub(target);
+            var sq = diff.elementwise_multiply(diff);
+            total_loss = total_loss + sq.sum() / 2;
+
+            // Backward pass
+            var grad = diff;
+            for (var i = len(this.layers) - 1; i >= 0; i = i - 1) {
+                grad = this.layers[i].backward(grad, learning_rate);
+            }
+        }
+
+        if (epoch % 100 == 0) {
+            print "Epoch " + numToString(epoch) + ": loss = " + numToString(total_loss);
+        }
+    }
+}
+    
+    predict(input) {
+        return this.forward(input);
+    }
+}

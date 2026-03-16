@@ -77,7 +77,8 @@ int main(int argc, const char* argv[])
   if (argc == 1) {
     repl();
   } else if (argc == 2) {
-    runFile(argv[1]);
+      vm.currentFilePath = argv[1];
+      runFile(argv[1]);
   } else {
     fprintf(stderr, "Usage: redfield [path]\n");
     exit(64);

@@ -122,9 +122,13 @@ ObjMatrix* newMatrix(int rows, int cols) {
     matrix->rows = rows;
     matrix->cols = cols;
     matrix->count = rows * cols;
-    matrix->data = ALLOCATE(Value, matrix->count);
-    for (int i = 0; i < matrix->count; i++) {
-        matrix->data[i] = NIL_VAL;
+    if (matrix->count > 0) {
+        matrix->data = ALLOCATE(Value, matrix->count);
+        for (int i = 0; i < matrix->count; i++) {
+            matrix->data[i] = NIL_VAL;
+        }
+    } else {
+        matrix->data = NULL;
     }
     return matrix;
 }

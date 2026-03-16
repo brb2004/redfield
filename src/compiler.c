@@ -256,6 +256,7 @@ static void binary(bool canAssign) {
     case TOKEN_LESS_EQUAL:    emitBytes(OP_GREATER, OP_NOT); break;
     case TOKEN_PLUS:          emitByte(OP_ADD); break;
     case TOKEN_MINUS:         emitByte(OP_SUBTRACT); break;
+    case TOKEN_PERCENT:       emitByte(OP_MODULO); break;
     case TOKEN_STAR:          emitByte(OP_MULTIPLY); break;
     case TOKEN_SLASH:         emitByte(OP_DIVIDE); break;
     default: return; 
@@ -423,6 +424,7 @@ ParseRule rules[] = {
   [TOKEN_PLUS]          = {NULL,     binary, PREC_TERM},
   [TOKEN_SEMICOLON]     = {NULL,     NULL,   PREC_NONE},
   [TOKEN_SLASH]         = {NULL,     binary, PREC_FACTOR},
+  [TOKEN_PERCENT]       = {NULL,     binary, PREC_FACTOR},
   [TOKEN_STAR]          = {NULL,     binary, PREC_FACTOR},
   [TOKEN_BANG]          = {unary,    NULL,   PREC_NONE},
   [TOKEN_BANG_EQUAL]    = {NULL,     binary, PREC_EQUALITY},  
@@ -848,6 +850,7 @@ static void importStatement() {
         parser.previous.start + 1,
         parser.previous.length - 2)));
     emitBytes(OP_IMPORT, pathConstant);
+    emitByte(OP_POP);  // ADD THIS LINE
     consume(TOKEN_SEMICOLON, "Expect ';' after import.");
 }
 static void statement() {
