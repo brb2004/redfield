@@ -1,0 +1,2 @@
+Hello, Redfield!
+File I/O is working!

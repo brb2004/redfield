@@ -16,7 +16,7 @@ typedef struct ObjClass ObjClass;
 typedef struct ObjInstance ObjInstance;
 typedef struct ObjBoundMethod ObjBoundMethod;
 typedef struct ObjMatrix ObjMatrix;
-
+typedef struct ObjMap ObjMap;
 #define OBJ_TYPE(value)        (AS_OBJ(value)->type)
 
 #define IS_BOUND_METHOD(value) isObjType(value, OBJ_BOUND_METHOD)
@@ -41,6 +41,8 @@ typedef struct ObjMatrix ObjMatrix;
 #define AS_FILE(value)        ((ObjFile*)AS_OBJ(value))
 #define IS_MATRIX(value)     isObjType(value, OBJ_MATRIX)
 #define AS_MATRIX(value)     ((ObjMatrix*)AS_OBJ(value))
+#define IS_MAP(value)          isObjType(value, OBJ_MAP)
+#define AS_MAP(value)         ((ObjMap*)AS_OBJ(value))
 
 typedef enum {
   OBJ_BOUND_METHOD,
@@ -53,7 +55,8 @@ typedef enum {
   OBJ_STRING,
   OBJ_UPVALUE,
   OBJ_FILE,
-  OBJ_MATRIX
+  OBJ_MATRIX,
+  OBJ_MAP
 } ObjType;
 
 
@@ -151,6 +154,11 @@ typedef struct {
     Value* items;
 } ObjArray;
 
+struct ObjMap {
+    Obj obj;
+    Table entries;
+};
+
 ObjClass* newClass(ObjString* name);
 ObjClosure* newClosure(ObjFunction* function);
 ObjFunction* newFunction();
@@ -163,6 +171,7 @@ ObjBoundMethod* newBoundMethod(Value receiver, ObjClosure* method);
 ObjArray* newArray();
 ObjFile* newFile(FILE* c_file, const char* mode);
 ObjMatrix* newMatrix(int rows, int cols);
+ObjMap *newMap();
 void printObject(Value value);
 
 static inline bool isObjType(Value value, ObjType type) {

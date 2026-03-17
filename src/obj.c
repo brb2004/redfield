@@ -132,6 +132,11 @@ ObjMatrix* newMatrix(int rows, int cols) {
     }
     return matrix;
 }
+ObjMap *newMap() {
+    ObjMap* map = ALLOCATE_OBJ(ObjMap, OBJ_MAP);
+    initTable(&map->entries);
+    return map;
+}
 static void printFunction(ObjFunction* function) {
   if (function->name == NULL) {
   printf("<script>");
@@ -180,6 +185,9 @@ void printObject(Value value) {
     break;
     case OBJ_FILE:
     printf("<file %p>", (void*)AS_FILE(value)->file);
+    break;
+    case OBJ_MAP:
+    printf("<map>");
     break;
   }
 }
