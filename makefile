@@ -1,23 +1,27 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -D_DEFAULT_SOURCE -Isrc -Ilib/glad/include -Wno-unused-parameter -Ilib/cJSON
-SRC = $(filter-out src/editor.c, $(wildcard src/*.c) $(wildcard src/natives/*.c)) lib/cJSON/cJSON.c
-
-OBJ = $(SRC:.c=.o)
+SRC = $(filter-out src/editor.c, $(wildcard src/*.c) $(wildcard src/natives/*.c))
+OBJ = $(SRC:.c=.o) lib/cJSON/cJSON.o
 BIN_DIR = bin
 
 # Detect OS
 ifeq ($(OS),Windows_NT)
     BIN = $(BIN_DIR)/redfield.exe
-    LIBS = -lglfw3 -lopengl32 -lgdi32 -lcurl -lm -lmingwex -mconsole
+    LIBS = -lglfw3 -lopengl32 -lgdi32 -lcurl -lm -mconsole
+    CJSON_FLAGS = -D__USE_MINGW_ANSI_STDIO=1
 else
     BIN = $(BIN_DIR)/redfield
     LIBS = -lglfw -lGL -ldl -lm -lcurl
+    CJSON_FLAGS =
 endif
 
 all: src/redfield_stdlib.h $(BIN)
 
 src/redfield_stdlib.h: lib/stdlib.rf
 	python3 -c "import json; content=open('lib/stdlib.rf').read(); print('const char* REDFIELD_STDLIB = ' + json.dumps(content) + ';')" > src/redfield_stdlib.h
+
+lib/cJSON/cJSON.o: lib/cJSON/cJSON.c
+	$(CC) $(CJSON_FLAGS) -Ilib/cJSON -c lib/cJSON/cJSON.c -o lib/cJSON/cJSON.o
 
 $(BIN): $(OBJ)
 	mkdir -p $(BIN_DIR)
@@ -28,7 +32,7 @@ src/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f src/*.o lib/glad/src/glad.o $(BIN) src/redfield_stdlib.h
+	rm -f src/*.o src/natives/*.o lib/glad/src/glad.o lib/cJSON/cJSON.o $(BIN) src/redfield_stdlib.h
 
 install: all
 	cp $(BIN) /usr/local/bin/redfield
