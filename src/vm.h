@@ -44,4 +44,5 @@ InterpretResult interpret(const char* source);
 void push(Value value);
 Value pop();
 bool call(ObjClosure* closure, int argCount);
+void runtimeError(const char* format, ...);
 #endif
