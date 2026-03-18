@@ -45,6 +45,10 @@ jobs:
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-glfw
             mingw-w64-x86_64-curl
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-zstd
+            mingw-w64-x86_64-brotli
+            mingw-w64-x86_64-nghttp2
             mingw-w64-x86_64-python
             mingw-w64-x86_64-python-pip
             make
@@ -60,7 +64,7 @@ jobs:
         shell: msys2 {0}
         run: |
           make clean
-          make OS=Windows_NT LIBS="-static -lglfw3 -lopengl32 -lgdi32 -lcurl -lm -lwinmm -lws2_32 -lcrypt32 -lwldap32 -lmingwex"
+          make OS=Windows_NT LIBS="-static -lglfw3 -lopengl32 -lgdi32 -lcurl -lssl -lcrypto -lzstd -lbrotlidec -lbrotlicommon -lnghttp2 -lz -lm -lwinmm -lws2_32 -lcrypt32 -lwldap32 -lmingwex"
 
       - name: Upload Windows binary
         uses: actions/upload-artifact@v4
