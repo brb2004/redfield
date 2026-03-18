@@ -63,12 +63,21 @@ jobs:
           make clean
           make OS=Windows_NT LIBS="-static-libgcc -static-libstdc++ -lglfw3 -lopengl32 -lgdi32 -lcurl -lm -lwinmm -lws2_32 -lcrypt32 -lwldap32"
 
+      - name: Check dependencies
+        shell: msys2 {0}
+        run: |
+          objdump -p bin/redfield.exe | grep "DLL Name"
+
       - name: Bundle DLLs and zip
         shell: msys2 {0}
         run: |
-          cp /mingw64/bin/libcurl-4.dll bin/
-          cp /mingw64/bin/glfw3.dll bin/ || true
-          cp /mingw64/bin/libwinpthread-1.dll bin/ || true
+          objdump -p bin/redfield.exe | grep "DLL Name" | awk '{print $3}' | while read dll; do
+            src="/mingw64/bin/$dll"
+            if [ -f "$src" ]; then
+              echo "Copying $dll"
+              cp "$src" bin/
+            fi
+          done
           zip -j redfield-windows.zip bin/redfield.exe bin/*.dll
 
       - name: Upload Windows zip
