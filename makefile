@@ -30,4 +30,7 @@ src/%.o: src/%.c
 clean:
 	rm -f src/*.o lib/glad/src/glad.o $(BIN) src/redfield_stdlib.h
 
-.PHONY: all clean
+install: all
+	cp $(BIN) /usr/local/bin/redfield
+
+.PHONY: all clean install
