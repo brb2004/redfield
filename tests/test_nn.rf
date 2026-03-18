@@ -1,0 +1,56 @@
+import "nn";
+
+var data = [
+    matrixNew(2, 1),
+    matrixNew(2, 1),
+    matrixNew(2, 1),
+    matrixNew(2, 1)
+];
+
+matrixSet(data[0], 0, 0, 0);
+matrixSet(data[0], 1, 0, 0);
+matrixSet(data[1], 0, 0, 1);
+matrixSet(data[1], 1, 0, 0);
+matrixSet(data[2], 0, 0, 0);
+matrixSet(data[2], 1, 0, 1);
+matrixSet(data[3], 0, 0, 1);
+matrixSet(data[3], 1, 0, 1);
+
+var labels = [
+    matrixNew(1, 1),
+    matrixNew(1, 1),
+    matrixNew(1, 1),
+    matrixNew(1, 1)
+];
+
+matrixSet(labels[0], 0, 0, 0);
+matrixSet(labels[1], 0, 0, 1);
+matrixSet(labels[2], 0, 0, 1);
+matrixSet(labels[3], 0, 0, 0);
+
+var l1 = DenseLayer(2, 8, "sigmoid");
+var l2 = DenseLayer(8, 1, "sigmoid");
+var net = Network([l1, l2]);
+
+net.trainAdam(data, labels, 0.01, 10000, 1000);
+
+print "0 XOR 0:";
+print matrixGet(net.forward(data[0]), 0, 0);
+print "1 XOR 0:";
+print matrixGet(net.forward(data[1]), 0, 0);
+print "0 XOR 1:";
+print matrixGet(net.forward(data[2]), 0, 0);
+print "1 XOR 1:";
+print matrixGet(net.forward(data[3]), 0, 0);
+
+var predicted = matrixNew(3, 1);
+matrixSet(predicted, 0, 0, 0.7);
+matrixSet(predicted, 1, 0, 0.2);
+matrixSet(predicted, 2, 0, 0.1);
+
+var actual = matrixNew(3, 1);
+matrixSet(actual, 0, 0, 1);
+matrixSet(actual, 1, 0, 0);
+matrixSet(actual, 2, 0, 0);
+
+print cross_entropy_loss(predicted, actual);

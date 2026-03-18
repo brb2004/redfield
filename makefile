@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -D_DEFAULT_SOURCE -Isrc -Ilib/glad/include -Wno-unused-parameter
-SRC = $(filter-out src/editor.c, $(wildcard src/*.c) $(wildcard src/natives/*.c))
+CFLAGS = -Wall -Wextra -std=c99 -D_DEFAULT_SOURCE -Isrc -Ilib/glad/include -Wno-unused-parameter -Ilib/cJSON
+SRC = $(filter-out src/editor.c, $(wildcard src/*.c) $(wildcard src/natives/*.c)) lib/cJSON/cJSON.c
 
 OBJ = $(SRC:.c=.o)
 BIN_DIR = bin

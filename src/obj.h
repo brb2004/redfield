@@ -1,5 +1,5 @@
-#ifndef om2_object_h
-#define om2_object_h
+#ifndef redfield_object_h
+#define redfield_object_h
 #include <stdio.h>
 #include "common.h"
 #include "value.h"

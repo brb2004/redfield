@@ -5,6 +5,7 @@ void registerArrayNatives();
 void registerMatrixNatives();
 void registerFileNatives();
 void registerGLNatives();
+void registerHttpNatives();
  
 void registerNatives() {
     registerGLNatives();
@@ -12,4 +13,5 @@ void registerNatives() {
     registerArrayNatives();
     registerMatrixNatives();
     registerFileNatives();
+    registerHttpNatives();
 }

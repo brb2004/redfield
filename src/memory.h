@@ -1,6 +1,6 @@
 #include <stddef.h>
-#ifndef om2_memory_h
-#define om2_memory_h
+#ifndef redfield_memory_h
+#define redfield_memory_h
 #include "obj.h"
 
 #include "common.h"

@@ -1,5 +1,5 @@
-#ifndef om2_scanner_h
-#define om2_scanner_h
+#ifndef redfield_scanner_h
+#define redfield_scanner_h
 
 typedef enum {
   // Single-character tokens.

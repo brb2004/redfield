@@ -4,10 +4,12 @@
 #include "compiler.h"
 #include "obj.h"
 #include "memory.h"
+#include "package.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 #include <stdlib.h>
 
 VM vm;
@@ -61,6 +63,7 @@ void initVM() {
   vm.grayStack     = NULL;
   initTable(&vm.globals);
   initTable(&vm.strings);
+  initTable(&vm.importedModules);
   vm.initString = copyString("init", 4);
   defineNative("clock", clockNative);
 }
@@ -69,6 +72,7 @@ void freeVM() {
   vm.initString = NULL;
   freeTable(&vm.globals);
   freeTable(&vm.strings);
+  freeTable(&vm.importedModules);
   freeObjects();
 }
 
@@ -240,31 +244,32 @@ static inline uint8_t readByte(CallFrame* frame) {
   return *frame->ip++;
 }
 static void normalizePath(char* path) {
-    char result[1024] = {0};
-    char temp[1024];
-    strncpy(temp, path, sizeof(temp));
-    
-    char* parts[100];
-    int count = 0;
-    
-    char* p = temp;
-    char* token;
-    while ((token = strtok(p, "/")) != NULL) {
-        p = NULL;
-        if (strcmp(token, "..") == 0) {
-            if (count > 0) count--;
-        } else if (strcmp(token, ".") != 0 && strlen(token) > 0) {
-            parts[count++] = token;
-        }
-    }
-    
-    result[0] = '\0';
-    for (int i = 0; i < count; i++) {
-        if (i > 0) strcat(result, "/");
-        strcat(result, parts[i]);
-    }
-    
-    strncpy(path, result, 1024);
+  char result[1024] = {0};
+  char temp[1024];
+  strncpy(temp, path, sizeof(temp));
+  
+  int isAbsolute = (path[0] == '/');
+  char* parts[100];
+  int count = 0; 
+  char* p = temp;
+  char* token;
+  while ((token = strtok(p, "/")) != NULL) {
+      p = NULL;
+      if (strcmp(token, "..") == 0) {
+          if (count > 0) count--;
+      } else if (strcmp(token, ".") != 0 && strlen(token) > 0) {
+          parts[count++] = token;
+      }
+  }
+  
+  result[0] = '\0';
+  if (isAbsolute) strcat(result, "/"); 
+  for (int i = 0; i < count; i++) {
+      if (i > 0) strcat(result, "/");
+      strcat(result, parts[i]);
+  }
+  
+  strncpy(path, result, 1024);
 }
 static InterpretResult run() {
 #define READ_BYTE()      readByte(frame)
@@ -525,8 +530,19 @@ static InterpretResult run() {
 case OP_IMPORT: {
     ObjString* path = AS_STRING(READ_CONSTANT());
     char fullPath[1024];
-    
-    if (path->chars[0] == '/') {
+    int isPackageName = (strchr(path->chars, '/') == NULL &&
+                         strchr(path->chars, '\\') == NULL &&
+                         strstr(path->chars, ".rf") == NULL);
+
+    if (isPackageName) {
+        char* resolved = resolvePackage(path->chars);
+        if (!resolved) {
+            runtimeError("Could not resolve package '%s'.", path->chars);
+            return INTERPRET_RUNTIME_ERROR;
+        }
+        snprintf(fullPath, sizeof(fullPath), "%s", resolved);
+        free(resolved);
+    } else if (path->chars[0] == '/') {
         snprintf(fullPath, sizeof(fullPath), "%s", path->chars);
     } else {
         const char* slash = strrchr(vm.currentFilePath, '/');
@@ -537,10 +553,13 @@ case OP_IMPORT: {
             snprintf(fullPath, sizeof(fullPath), "%s", path->chars);
         }
     }
-    
     normalizePath(fullPath);
-    fprintf(stderr, "DEBUG: currentFilePath='%s' import='%s' -> fullPath='%s'\n",
-    vm.currentFilePath, path->chars, fullPath);
+    ObjString* pathKey = copyString(fullPath, strlen(fullPath));
+    Value dummy;
+    if (tableGet(&vm.importedModules, pathKey, &dummy)) {
+        break;
+    }
+tableSet(&vm.importedModules, pathKey, BOOL_VAL(true));
     FILE* file = fopen(fullPath, "rb");
     if (file == NULL) {
         runtimeError("Could not open module '%s'.", fullPath);
@@ -553,8 +572,6 @@ case OP_IMPORT: {
     fread(source, sizeof(char), size, file);
     source[size] = '\0';
     fclose(file);
-
-    const char* previousPath = vm.currentFilePath;
     vm.currentFilePath = strdup(fullPath); 
 
     ObjFunction* function = compile(source);

@@ -9,6 +9,7 @@
 #include <GLFW/glfw3.h> 
 #include "natives.h"
 #include "redfield_stdlib.h"
+#include <curl/curl.h>
 GLFWwindow* window = NULL;
 
 static void repl() {
@@ -71,20 +72,33 @@ void initOpenGL() {
 }
 int main(int argc, const char* argv[])
 {
+    curl_global_init(CURL_GLOBAL_ALL);
     initVM();
     registerNatives();
     interpret(REDFIELD_STDLIB);
-  if (argc == 1) {
-    repl();
-  } else if (argc == 2) {
-      vm.currentFilePath = argv[1];
-      runFile(argv[1]);
-  } else {
-    fprintf(stderr, "Usage: redfield [path]\n");
-    exit(64);
-  }
+    if (argc == 1) {
+        repl();
+    } else if (argc == 2) {
+        if (strcmp(argv[1], "update") == 0) {
+            char registryPath[512];
+            const char* home = getenv("HOME");
+            if (!home) home = getenv("USERPROFILE");
+            if (!home) home = ".";
+            snprintf(registryPath, sizeof(registryPath), "%s/.redfield/registry.json", home);
+            remove(registryPath);
+            printf("Registry cache cleared. Packages will be re-fetched on next import.\n");
+        } else {
+            vm.currentFilePath = argv[1];
+            runFile(argv[1]);
+        }
+    } else {
+        fprintf(stderr, "Usage: redfield [path]\n");
+        fprintf(stderr, "       redfield update\n");
+        exit(64);
+    }
 
   freeVM();
   glfwTerminate();
+  curl_global_cleanup();
     return 0;
 }

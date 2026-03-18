@@ -76,7 +76,20 @@ static Value arrayNewNative(int argCount, Value* args) {
     pop();
     return OBJ_VAL(array);
 }
-
+static Value arrayGetNative(int argCount, Value* args) {
+    if (argCount != 2) { runtimeError("arrayGet expects 2 arguments: array, index"); return NIL_VAL; }
+    if (!IS_ARRAY(args[0])) { runtimeError("arrayGet: first argument must be an array"); return NIL_VAL; }
+    if (!IS_NUMBER(args[1])) { runtimeError("arrayGet: second argument must be a number"); return NIL_VAL; }
+    ObjArray* array = AS_ARRAY(args[0]);
+    int index = (int)AS_NUMBER(args[1]);
+    if (index < 0 || index >= array->count) { runtimeError("arrayGet: index out of bounds"); return NIL_VAL; }
+    return array->items[index];
+}
+static Value arrayLengthNative(int argCount, Value* args) {
+    if (argCount != 1) { runtimeError("arrayLength expects 1 argument"); return NIL_VAL; }
+    if (!IS_ARRAY(args[0])) { runtimeError("arrayLength: argument must be an array"); return NIL_VAL; }
+    return NUMBER_VAL(AS_ARRAY(args[0])->count);
+}
 void registerArrayNatives() {
     defineNative("len",       lenNative);
     defineNative("arrayPush", arrayPushNative);
@@ -84,4 +97,6 @@ void registerArrayNatives() {
     defineNative("arrayFill", arrayFillNative);
     defineNative("arrayCopy", arrayCopyNative);
     defineNative("arrayNew",  arrayNewNative);
+    defineNative("arrayGet",   arrayGetNative);
+    defineNative("arrayLength", arrayLengthNative);
 }

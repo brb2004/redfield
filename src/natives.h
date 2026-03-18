@@ -7,6 +7,6 @@ void registerArrayNatives();
 void registerMatrixNatives();
 void registerFileNatives();
 void registerGLNatives();
- 
+void registerHttpNatives();
 #endif
  

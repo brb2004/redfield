@@ -5,7 +5,7 @@
 #include "../obj.h"
 #include "../memory.h"
 #include "../table.h"
-
+#include "stdlib.h"
 void runtimeError(const char* format, ...);
 
 // Disable GC during matrix ops to avoid invalidating pointers
@@ -258,17 +258,20 @@ static Value matrixSigmoidNative(int argCount, Value* args) {
     MATRIX_OP_END return wrapped;
 }
 
-static Value matrixSigmoidDerivNative(int argCount, Value* args) {
+
+static Value matrixSigmoidDerivFromOutputNative(int argCount, Value* args) {
     (void)argCount;
     MATRIX_OP_BEGIN
     ObjMatrix* a = getMatrix(args[0]); if (!a) { MATRIX_OP_END return NIL_VAL; }
     ObjMatrix* result = newMatrix(a->rows, a->cols);
     push(OBJ_VAL(result));
-    for (int i = 0; i < a->count; i++) { double x = AS_NUMBER(a->data[i]); double s = 1.0/(1.0+exp(-x)); result->data[i] = NUMBER_VAL(s*(1.0-s)); }
+    for (int i = 0; i < a->count; i++) {
+        double s = AS_NUMBER(a->data[i]);
+        result->data[i] = NUMBER_VAL(s * (1.0 - s));
+    }
     Value wrapped = wrapMatrix(result); pop();
     MATRIX_OP_END return wrapped;
 }
-
 static Value matrixReluNative(int argCount, Value* args) {
     (void)argCount;
     MATRIX_OP_BEGIN
@@ -291,6 +294,156 @@ static Value matrixReluDerivNative(int argCount, Value* args) {
     MATRIX_OP_END return wrapped;
 }
 
+static Value matrixRandomNative(int argCount, Value* args) {
+    if (argCount != 4) { runtimeError("matrixRandom expects 4 arguments: rows, cols, min, max"); return NIL_VAL; }
+    if (!IS_NUMBER(args[0]) || !IS_NUMBER(args[1]) || !IS_NUMBER(args[2]) || !IS_NUMBER(args[3])) {
+        runtimeError("matrixRandom expects all arguments to be numbers"); return NIL_VAL;
+    }
+    int rows = (int)AS_NUMBER(args[0]);
+    int cols = (int)AS_NUMBER(args[1]);
+    double min = AS_NUMBER(args[2]);
+    double max = AS_NUMBER(args[3]);
+    if (rows <= 0 || cols <= 0) { runtimeError("matrixRandom: rows and cols must be positive"); return NIL_VAL; }
+    if (min > max) { runtimeError("matrixRandom: min cannot be greater than max"); return NIL_VAL; }
+    ObjMatrix* result = newMatrix(rows, cols);
+    push(OBJ_VAL(result));
+    for (int i = 0; i < result->count; i++) {
+        double r = ((double)rand() / RAND_MAX) * (max - min) + min;
+        result->data[i] = NUMBER_VAL(r);
+    }
+    Value wrapped = wrapMatrix(result);
+    pop();
+    return wrapped;
+}
+static Value matrixTanhNative(int argCount, Value* args) {
+    (void)argCount;
+    MATRIX_OP_BEGIN
+    ObjMatrix* a = getMatrix(args[0]); if (!a) { MATRIX_OP_END return NIL_VAL; }
+    ObjMatrix* result = newMatrix(a->rows, a->cols);
+    push(OBJ_VAL(result));
+    for (int i = 0; i < a->count; i++) {
+        double x = AS_NUMBER(a->data[i]);
+        result->data[i] = NUMBER_VAL(tanh(x));
+    }
+    Value wrapped = wrapMatrix(result); pop();
+    MATRIX_OP_END return wrapped;
+}
+
+static Value matrixTanhDerivFromOutputNative(int argCount, Value* args) {
+    (void)argCount;
+    MATRIX_OP_BEGIN
+    ObjMatrix* a = getMatrix(args[0]); if (!a) { MATRIX_OP_END return NIL_VAL; }
+    ObjMatrix* result = newMatrix(a->rows, a->cols);
+    push(OBJ_VAL(result));
+    for (int i = 0; i < a->count; i++) {
+        double s = AS_NUMBER(a->data[i]);
+        result->data[i] = NUMBER_VAL(1.0 - s * s);
+    }
+    Value wrapped = wrapMatrix(result); pop();
+    MATRIX_OP_END return wrapped;
+}
+static Value matrixSqrtNative(int argCount, Value* args) {
+    (void)argCount;
+    MATRIX_OP_BEGIN
+    ObjMatrix* a = getMatrix(args[0]); if (!a) { MATRIX_OP_END return NIL_VAL; }
+    ObjMatrix* result = newMatrix(a->rows, a->cols);
+    push(OBJ_VAL(result));
+    for (int i = 0; i < a->count; i++) {
+        double x = AS_NUMBER(a->data[i]);
+        result->data[i] = NUMBER_VAL(sqrt(x));
+    }
+    Value wrapped = wrapMatrix(result); pop();
+    MATRIX_OP_END return wrapped;
+}
+static Value matrixAddScalarNative(int argCount, Value* args) {
+    (void)argCount;
+    MATRIX_OP_BEGIN
+    ObjMatrix* a = getMatrix(args[0]);
+    if (!a || !IS_NUMBER(args[1])) { MATRIX_OP_END return NIL_VAL; }
+    double scalar = AS_NUMBER(args[1]);
+    ObjMatrix* result = newMatrix(a->rows, a->cols);
+    push(OBJ_VAL(result));
+    for (int i = 0; i < a->count; i++)
+        result->data[i] = NUMBER_VAL(AS_NUMBER(a->data[i]) + scalar);
+    Value wrapped = wrapMatrix(result); pop();
+    MATRIX_OP_END return wrapped;
+}
+static Value matrixDivideNative(int argCount, Value* args) {
+    (void)argCount;
+    MATRIX_OP_BEGIN
+    ObjMatrix* a = getMatrix(args[0]); ObjMatrix* b = getMatrix(args[1]);
+    if (!a || !b) { MATRIX_OP_END return NIL_VAL; }
+    if (a->rows != b->rows || a->cols != b->cols) { MATRIX_OP_END runtimeError("matrixDivide: dimension mismatch"); return NIL_VAL; }
+    ObjMatrix* result = newMatrix(a->rows, a->cols);
+    push(OBJ_VAL(result));
+    for (int i = 0; i < a->count; i++)
+        result->data[i] = NUMBER_VAL(AS_NUMBER(a->data[i]) / AS_NUMBER(b->data[i]));
+    Value wrapped = wrapMatrix(result); pop();
+    MATRIX_OP_END return wrapped;
+}
+static Value matrixSoftmaxNative(int argCount, Value* args) {
+    (void)argCount;
+    MATRIX_OP_BEGIN
+    ObjMatrix* a = getMatrix(args[0]);
+    if (!a) { MATRIX_OP_END return NIL_VAL; }
+    ObjMatrix* result = newMatrix(a->rows, a->cols);
+    push(OBJ_VAL(result));
+    double sum = 0;
+    for (int i = 0; i < a->count; i++) {
+        double x = exp(AS_NUMBER(a->data[i]));
+        result->data[i] = NUMBER_VAL(x);
+        sum += x;
+    }
+    for (int i = 0; i < a->count; i++)
+        result->data[i] = NUMBER_VAL(AS_NUMBER(result->data[i]) / sum);
+    Value wrapped = wrapMatrix(result); pop();
+    MATRIX_OP_END return wrapped;
+}
+static Value matrixArgmaxNative(int argCount, Value* args) {
+    (void)argCount;
+    ObjMatrix* a = getMatrix(args[0]);
+    if (!a) { runtimeError("matrixArgmax expects a matrix"); return NIL_VAL; }
+    int maxIndex = 0;
+    double maxValue = AS_NUMBER(a->data[0]);
+    for (int i = 1; i < a->count; i++) {
+        double val = AS_NUMBER(a->data[i]);
+        if (val > maxValue) { maxValue = val; maxIndex = i; }
+    }
+    return NUMBER_VAL(maxIndex);
+}
+
+static Value matrixClipNative(int argCount, Value* args) {
+    (void)argCount;
+    MATRIX_OP_BEGIN
+    ObjMatrix* a = getMatrix(args[0]);
+    if (!a || !IS_NUMBER(args[1]) || !IS_NUMBER(args[2])) { MATRIX_OP_END runtimeError("matrixClip expects a matrix and two numbers"); return NIL_VAL; }
+    double mn = AS_NUMBER(args[1]);
+    double mx = AS_NUMBER(args[2]);
+    ObjMatrix* result = newMatrix(a->rows, a->cols);
+    push(OBJ_VAL(result));
+    for (int i = 0; i < a->count; i++) {
+        double x = AS_NUMBER(a->data[i]);
+        if (x < mn) x = mn;
+        else if (x > mx) x = mx;
+        result->data[i] = NUMBER_VAL(x);
+    }
+    Value wrapped = wrapMatrix(result); pop();
+    MATRIX_OP_END return wrapped;
+}
+static Value matrixLogNative(int argCount, Value* args) {
+    (void)argCount;
+    MATRIX_OP_BEGIN
+    ObjMatrix* a = getMatrix(args[0]);
+    if (!a) { MATRIX_OP_END return NIL_VAL; }
+    ObjMatrix* result = newMatrix(a->rows, a->cols);
+    push(OBJ_VAL(result));
+    for (int i = 0; i < a->count; i++) {
+        double x = AS_NUMBER(a->data[i]);
+        result->data[i] = NUMBER_VAL(log(x));
+    }
+    Value wrapped = wrapMatrix(result); pop();
+    MATRIX_OP_END return wrapped;
+}
 void registerMatrixNatives() {
     defineNative("matrixNew",                 matrixNewNative);
     defineNative("matrixGet",                 matrixGetNative);
@@ -308,7 +461,17 @@ void registerMatrixNatives() {
     defineNative("matrixRowSum",              matrixRowSumNative);
     defineNative("matrixColSum",              matrixColSumNative);
     defineNative("matrixSigmoid",             matrixSigmoidNative);
-    defineNative("matrixSigmoidDeriv",        matrixSigmoidDerivNative);
+    defineNative("matrixSigmoidDeriv",        matrixSigmoidDerivFromOutputNative);
     defineNative("matrixRelu",                matrixReluNative);
     defineNative("matrixReluDeriv",           matrixReluDerivNative);
+    defineNative("matrixRandom",              matrixRandomNative);
+    defineNative("matrixTanh",                matrixTanhNative);
+    defineNative("matrixTanhDeriv",           matrixTanhDerivFromOutputNative);
+    defineNative("matrixSqrt",                matrixSqrtNative);
+    defineNative("matrixAddScalar",          matrixAddScalarNative);
+    defineNative("matrixDivide",             matrixDivideNative);
+    defineNative("matrixSoftmax",            matrixSoftmaxNative);
+    defineNative("matrixArgmax",             matrixArgmaxNative);
+    defineNative("matrixClip",               matrixClipNative);
+    defineNative("matrixLog",                matrixLogNative);
 }
