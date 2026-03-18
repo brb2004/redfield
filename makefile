@@ -8,11 +8,9 @@ BIN_DIR = bin
 ifeq ($(OS),Windows_NT)
     BIN = $(BIN_DIR)/redfield.exe
     LIBS = -lglfw3 -lopengl32 -lgdi32 -lcurl -lm -mconsole
-    CJSON_FLAGS = -D__USE_MINGW_ANSI_STDIO=1
 else
     BIN = $(BIN_DIR)/redfield
     LIBS = -lglfw -lGL -ldl -lm -lcurl
-    CJSON_FLAGS =
 endif
 
 all: src/redfield_stdlib.h $(BIN)
@@ -21,7 +19,7 @@ src/redfield_stdlib.h: lib/stdlib.rf
 	python3 -c "import json; content=open('lib/stdlib.rf').read(); print('const char* REDFIELD_STDLIB = ' + json.dumps(content) + ';')" > src/redfield_stdlib.h
 
 lib/cJSON/cJSON.o: lib/cJSON/cJSON.c
-	$(CC) $(CJSON_FLAGS) -Ilib/cJSON -c lib/cJSON/cJSON.c -o lib/cJSON/cJSON.o
+	$(CC) -D__USE_MINGW_ANSI_STDIO=1 -Ilib/cJSON -c lib/cJSON/cJSON.c -o lib/cJSON/cJSON.o
 
 $(BIN): $(OBJ)
 	mkdir -p $(BIN_DIR)
