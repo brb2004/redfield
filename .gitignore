@@ -2,3 +2,4 @@ bin/
 src/*.o
 lib/glad/src/*.o
 *.core
+lib/cJSON/cJSON.o
