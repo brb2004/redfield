@@ -9,8 +9,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
-#include <math.h>
-#include "jit.h"
+
 VM vm;
 
 static Value clockNative(int argCount, Value* args) {
@@ -540,6 +539,8 @@ case OP_IMPORT: {
     }
     
     normalizePath(fullPath);
+    fprintf(stderr, "DEBUG: currentFilePath='%s' import='%s' -> fullPath='%s'\n",
+    vm.currentFilePath, path->chars, fullPath);
     FILE* file = fopen(fullPath, "rb");
     if (file == NULL) {
         runtimeError("Could not open module '%s'.", fullPath);
@@ -695,32 +696,15 @@ case OP_IMPORT: {
 #undef READ_STRING
 #undef BINARY_OP
 }
-static void resetAndRun(ObjFunction* function) {
-    resetStack();
-    push(OBJ_VAL(function));
-    ObjClosure* closure = newClosure(function);
-    pop();
-    push(OBJ_VAL(closure));
-    call(closure, 0);
-}
-InterpretResult interpret(const char* source) {
-    ObjFunction* function = compile(source);
-    if (function == NULL) return INTERPRET_COMPILE_ERROR;
 
-    push(OBJ_VAL(function));
-    ObjClosure* closure = newClosure(function);
-    pop();
-    push(OBJ_VAL(closure));
-    call(closure, 0);
-    if (jitExecute(function)) {
-        pop(); 
-        return INTERPRET_OK;
-    }
-    resetStack();
-    push(OBJ_VAL(function));
-    closure = newClosure(function);
-    pop();
-    push(OBJ_VAL(closure));
-    call(closure, 0);
-    return run();
+InterpretResult interpret(const char* source) {
+  ObjFunction* function = compile(source);
+  if (function == NULL) return INTERPRET_COMPILE_ERROR;
+
+  push(OBJ_VAL(function));
+  ObjClosure* closure = newClosure(function);
+  pop();
+  push(OBJ_VAL(closure));
+  call(closure, 0);
+  return run();
 }

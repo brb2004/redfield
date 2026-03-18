@@ -143,11 +143,6 @@ static void blackenObject(Obj* object) {
         }
         break;
     }
-    case OBJ_MAP: {
-  ObjMap* map = (ObjMap*)object;
-  markTable(&map->entries);
-  break;
-  }
   }
 }
 
@@ -298,12 +293,6 @@ static void freeObject(Obj* object) {
     }
     FREE(ObjFile, object);
     break;
-  }
-    case OBJ_MAP: {
-  ObjMap* map = (ObjMap*)object;
-  freeTable(&map->entries);
-  FREE(ObjMap, object);
-  break;
 }
   }
 }

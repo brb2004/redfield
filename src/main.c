@@ -9,7 +9,6 @@
 #include <GLFW/glfw3.h> 
 #include "natives.h"
 #include "redfield_stdlib.h"
-#include "jit.h"
 GLFWwindow* window = NULL;
 
 static void repl() {
@@ -72,7 +71,6 @@ void initOpenGL() {
 }
 int main(int argc, const char* argv[])
 {
-    jitInit();
     initVM();
     registerNatives();
     interpret(REDFIELD_STDLIB);
@@ -87,7 +85,6 @@ int main(int argc, const char* argv[])
   }
 
   freeVM();
-  jitShutdown();
   glfwTerminate();
     return 0;
 }
