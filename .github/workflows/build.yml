@@ -47,6 +47,7 @@ jobs:
             mingw-w64-x86_64-curl
             mingw-w64-x86_64-python
             mingw-w64-x86_64-python-pip
+            zip
             make
 
       - name: Generate glad and stdlib
@@ -68,7 +69,7 @@ jobs:
           cp /mingw64/bin/libcurl-4.dll bin/
           cp /mingw64/bin/glfw3.dll bin/ || true
           cp /mingw64/bin/libwinpthread-1.dll bin/ || true
-          cd bin && zip -r ../../redfield-windows.zip .
+          zip -j redfield-windows.zip bin/redfield.exe bin/*.dll
 
       - name: Upload Windows zip
         uses: actions/upload-artifact@v4
