@@ -3,7 +3,9 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <sys/stat.h>
 #include "cJSON.h"
+
 
 char* rfFetch(const char* url, const char* method, const char* body);
 
