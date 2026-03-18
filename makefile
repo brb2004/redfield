@@ -26,7 +26,7 @@ OBJ     = $(C_OBJ) $(CXX_OBJ) lib/cJSON/cJSON.o lib/glad/src/glad.o
 all: src/redfield_stdlib.h $(BIN)
 
 src/redfield_stdlib.h: lib/stdlib.rf
-	$(STDLIB_GEN) > src/redfield_stdlib.h
+	$(STDLIB_GEN) > src/redfield_stdlib.h || true
 
 lib/cJSON/cJSON.o: lib/cJSON/cJSON.c
 	$(CC) -std=c99 -D__USE_MINGW_ANSI_STDIO=1 -Ilib/cJSON -c $< -o $@
