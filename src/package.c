@@ -4,6 +4,9 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#endif
 #include "cJSON.h"
 
 
@@ -25,19 +28,19 @@ static void mkdirRecursive(const char* path) {
     for (char* p = tmp + 1; *p; p++) {
         if (*p == '/' || *p == '\\') {
             *p = '\0';
-            #ifdef _WIN32
-                _mkdir(tmp);
-            #else
-                mkdir(tmp, 0755);
-            #endif
+#ifdef _WIN32
+            _mkdir(tmp);
+#else
+            mkdir(tmp, 0755);
+#endif
             *p = '/';
         }
     }
-    #ifdef _WIN32
-        _mkdir(tmp);
-    #else
-        mkdir(tmp, 0755);
-    #endif
+#ifdef _WIN32
+    _mkdir(tmp);
+#else
+    mkdir(tmp, 0755);
+#endif
 }
 static int saveToFile(const char* path, const char* data) {
     FILE* file = fopen(path, "w");
