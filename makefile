@@ -48,7 +48,7 @@ $(BIN): $(OBJ)
 	g++ $(OBJ) -o $(BIN) $(LIBS)
 
 clean:
-	rm -f src/*.o src/natives/*.o lib/glad/src/glad.o lib/cJSON/cJSON.o $(BIN) src/redfield_stdlib.h
+	rm -f src/*.o src/natives/*.o lib/glad/src/glad.o lib/cJSON/cJSON.o $(BIN)
 
 install: all
 	cp $(BIN) /usr/local/bin/redfield
