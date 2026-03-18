@@ -3,6 +3,7 @@
 #include "../obj.h"
 #include "../memory.h"
 
+
 static Value lenNative(int argCount, Value* args) {
     (void)argCount;
     if (!IS_ARRAY(args[0])) return NUMBER_VAL(0);
