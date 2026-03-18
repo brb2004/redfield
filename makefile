@@ -34,4 +34,23 @@ lib/cJSON/cJSON.o: lib/cJSON/cJSON.c
 lib/glad/src/glad.o: lib/glad/src/glad.c
 	$(CC) -Ilib/glad/include -c $< -o $@
 
-src/: src/
+src/%.o: src/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+src/%.o: src/%.cpp
+	g++ $(CXXFLAGS) -c $< -o $@
+
+src/natives/%.o: src/natives/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BIN): $(OBJ)
+	$(MKDIR) $(BIN_DIR)
+	g++ $(OBJ) -o $(BIN) $(LIBS)
+
+clean:
+	rm -f src/*.o src/natives/*.o lib/glad/src/glad.o lib/cJSON/cJSON.o $(BIN) src/redfield_stdlib.h
+
+install: all
+	cp $(BIN) /usr/local/bin/redfield
+
+.PHONY: all clean install
