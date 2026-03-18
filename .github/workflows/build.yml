@@ -22,10 +22,6 @@ jobs:
           pip3 install glad --break-system-packages
           python3 -m glad --profile core --api gl=3.3 --generator c --out-path lib/glad
 
-      - name: Generate stdlib header
-        run: |
-          python3 -c "import json; content=open('lib/stdlib.rf').read(); print('const char* REDFIELD_STDLIB = ' + json.dumps(content) + ';')" > src/redfield_stdlib.h
-
       - name: Build
         run: make
 
@@ -40,20 +36,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Generate glad
-        run: |
-          pip install glad
-          python -m glad --profile core --api gl=3.3 --generator c --out-path lib/glad
-
-      - name: Generate stdlib header
-        run: |
-          python -c "import json; content=open('lib/stdlib.rf').read(); print('const char* REDFIELD_STDLIB = ' + json.dumps(content) + ';')" > src/redfield_stdlib.h
-
       - name: Install MSYS2
         uses: msys2/setup-msys2@v2
         with:
@@ -63,26 +45,28 @@ jobs:
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-glfw
             mingw-w64-x86_64-curl
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-python-pip
             make
+
+      - name: Generate glad and stdlib
+        shell: msys2 {0}
+        run: |
+          pip install glad
+          python -m glad --profile core --api gl=3.3 --generator c --out-path lib/glad
+          python -c "import json; content=open('lib/stdlib.rf').read(); print('const char* REDFIELD_STDLIB = ' + json.dumps(content) + ';')" > src/redfield_stdlib.h
 
       - name: Build
         shell: msys2 {0}
-        run: make
-
-      - name: Copy DLLs
-        shell: msys2 {0}
         run: |
-          cp /mingw64/bin/glfw3.dll bin/
-          cp /mingw64/bin/libgcc_s_seh-1.dll bin/
-          cp /mingw64/bin/libwinpthread-1.dll bin/
-          cp /mingw64/bin/libstdc++-6.dll bin/ || true
-          cp /mingw64/bin/libcurl-4.dll bin/ || true
+          make clean
+          make OS=Windows_NT LIBS="-static -lglfw3 -lopengl32 -lgdi32 -lcurl -lm -lwinmm -lws2_32 -lcrypt32 -lwldap32 -lmingwex"
 
       - name: Upload Windows binary
         uses: actions/upload-artifact@v4
         with:
           name: redfield-windows
-          path: bin/
+          path: bin/redfield.exe
 
   release:
     needs: [build-linux, build-windows]
@@ -92,14 +76,11 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
 
-      - name: Zip Windows release
-        run: zip -j redfield-windows.zip redfield-windows/*
-
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             redfield-linux/redfield
-            redfield-windows.zip
+            redfield-windows/redfield.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
