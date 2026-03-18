@@ -45,10 +45,6 @@ jobs:
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-glfw
             mingw-w64-x86_64-curl
-            mingw-w64-x86_64-openssl
-            mingw-w64-x86_64-zstd
-            mingw-w64-x86_64-brotli
-            mingw-w64-x86_64-nghttp2
             mingw-w64-x86_64-python
             mingw-w64-x86_64-python-pip
             make
@@ -64,13 +60,21 @@ jobs:
         shell: msys2 {0}
         run: |
           make clean
-          make OS=Windows_NT LIBS="-static -lglfw3 -lopengl32 -lgdi32 -lcurl -lssl -lcrypto -lzstd -lbrotlidec -lbrotlicommon -lnghttp2 -lz -lm -lwinmm -lws2_32 -lcrypt32 -lwldap32 -lmingwex"
+          make OS=Windows_NT LIBS="-static-libgcc -static-libstdc++ -lglfw3 -lopengl32 -lgdi32 -lcurl -lm -lwinmm -lws2_32 -lcrypt32 -lwldap32"
 
-      - name: Upload Windows binary
+      - name: Bundle DLLs and zip
+        shell: msys2 {0}
+        run: |
+          cp /mingw64/bin/libcurl-4.dll bin/
+          cp /mingw64/bin/glfw3.dll bin/ || true
+          cp /mingw64/bin/libwinpthread-1.dll bin/ || true
+          cd bin && zip -r ../../redfield-windows.zip .
+
+      - name: Upload Windows zip
         uses: actions/upload-artifact@v4
         with:
           name: redfield-windows
-          path: bin/redfield.exe
+          path: redfield-windows.zip
 
   release:
     needs: [build-linux, build-windows]
@@ -85,6 +89,6 @@ jobs:
         with:
           files: |
             redfield-linux/redfield
-            redfield-windows/redfield.exe
+            redfield-windows/redfield-windows.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
