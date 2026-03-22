@@ -542,17 +542,18 @@ case OP_IMPORT: {
         }
         snprintf(fullPath, sizeof(fullPath), "%s", resolved);
         free(resolved);
-    } else if (path->chars[0] == '/') {
-        snprintf(fullPath, sizeof(fullPath), "%s", path->chars);
-    } else {
-        const char* slash = strrchr(vm.currentFilePath, '/');
-        if (slash != NULL) {
-            int dirLen = (int)(slash - vm.currentFilePath) + 1;
-            snprintf(fullPath, sizeof(fullPath), "%.*s%s", dirLen, vm.currentFilePath, path->chars);
-        } else {
-            snprintf(fullPath, sizeof(fullPath), "%s", path->chars);
-        }
-    }
+        } else if (path->chars[0] == '/' || (path->chars[1] == ':' && path->chars[2] == '\\')) {
+    snprintf(fullPath, sizeof(fullPath), "%s", path->chars);} else {
+      const char* slash = strrchr(vm.currentFilePath, '/');
+      const char* backslash = strrchr(vm.currentFilePath, '\\');
+      if (backslash > slash) slash = backslash;
+      if (slash != NULL) {
+          int dirLen = (int)(slash - vm.currentFilePath) + 1;
+          snprintf(fullPath, sizeof(fullPath), "%.*s%s", dirLen, vm.currentFilePath, path->chars);
+      } else {
+          snprintf(fullPath, sizeof(fullPath), "%s", path->chars);
+      }
+  }
     normalizePath(fullPath);
     ObjString* pathKey = copyString(fullPath, strlen(fullPath));
     Value dummy;

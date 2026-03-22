@@ -1,0 +1,45 @@
+import "matrix.rf";
+import "activations.rf";
+
+class Layer {
+    init(input_size, output_size, activation) {
+        this.activation = activation;
+        this.input_size = input_size;
+        this.output_size = output_size;
+
+        // Xavier initialization
+        this.weights = Matrix(output_size, input_size);
+        var scale = sqrt(2.0 / input_size);
+        for (var i = 0; i < output_size; i = i + 1) {
+            for (var j = 0; j < input_size; j = j + 1) {
+                this.weights.set(i, j, randRange(-scale, scale));
+            }
+        }
+
+        // Zero bias
+        this.bias = Matrix(output_size, 1);
+        for (var i = 0; i < output_size; i = i + 1) {
+            this.bias.set(i, 0, 0);
+        }
+    }
+
+    forward(input) {
+        this.input = input;
+        this.z = this.weights.mul(input).add(this.bias);
+        this.output = this.z.apply(this.activation);
+        return this.output;
+    }
+
+    backward(grad, learning_rate) {
+        var activation_grad = this.z.apply(this.activation + "_derivative");
+        var delta = grad.elementwise_multiply(activation_grad);
+
+        var weight_grad = delta.mul(this.input.transpose());
+        var input_grad = this.weights.transpose().mul(delta);
+
+        this.weights = this.weights.sub(weight_grad.scale(learning_rate));
+        this.bias = this.bias.sub(delta.scale(learning_rate));
+
+        return input_grad;
+    }
+}
