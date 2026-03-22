@@ -29,6 +29,8 @@ static size_t writeCallback(char* ptr, size_t size, size_t nmemb, void* userdata
 
 char* rfFetch(const char* url, const char* method, const char* body) {
     CURL* curl = curl_easy_init();
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
     if (!curl) return NULL;
 
     ResponseBuffer buf = {NULL, 0};
