@@ -182,12 +182,12 @@ static Value readCSVNative(int argCount, Value* args) {
             rows->items = GROW_ARRAY(Value, rows->items, rows->capacity, newCap);
             rows->capacity = newCap;
         }
-        rows->items[rows->count++] = peek(0); // push row
+       rows->items[rows->count++] = vm.stackTop[-1];
         pop(); // row
     }
 
     fclose(file);
-    Value result = peek(0);
+    Value result = vm.stackTop[-1];
     pop(); // rows
     return result;
 }
