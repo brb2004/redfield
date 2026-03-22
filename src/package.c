@@ -50,22 +50,30 @@ static int saveToFile(const char* path, const char* data) {
     return 1;
 }
 char* resolvePackage(const char* name) {
+    char dir[512];
     char cacheDir[1024];
     char cachePath[2048];
-    char dir[512];
+
     getRedfieldDir(dir, sizeof(dir));
+    fprintf(stderr, "DEBUG: redfield dir = %s\n", dir);
     snprintf(cacheDir, sizeof(cacheDir), "%s/packages/%s", dir, name);
     snprintf(cachePath, sizeof(cachePath), "%s/init.rf", cacheDir);
-    if (fileExists(cachePath)) return strdup(cachePath);
-    char url[512];
-    snprintf(url, sizeof(url), "https://raw.githubusercontent.com/brb2004/redfield-registry/main/%s/init.rf", name);
-    char* result = rfFetch(url, "GET", NULL);
-    if (!result) return NULL;
-    if (strncmp(result, "404", 3) == 0) {
-        fprintf(stderr, "Package '%s' not found\n", name);
-        free(result);
-        return NULL;
+    fprintf(stderr, "DEBUG: cache path = %s\n", cachePath);
+
+    if (fileExists(cachePath)) {
+        fprintf(stderr, "DEBUG: found in cache\n");
+        return strdup(cachePath);
     }
+
+    fprintf(stderr, "DEBUG: fetching from registry\n");
+    char url[512];
+    snprintf(url, sizeof(url),
+        "https://raw.githubusercontent.com/brb2004/redfield-registry/main/%s/init.rf",
+        name);
+    fprintf(stderr, "DEBUG: url = %s\n", url);
+
+    char* result = rfFetch(url, "GET", NULL);
+    fprintf(stderr, "DEBUG: result = %s\n", result ? result : "NULL");
     mkdirRecursive(cacheDir);
     saveToFile(cachePath, result);
     free(result);
