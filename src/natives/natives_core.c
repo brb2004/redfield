@@ -97,7 +97,12 @@ static Value csvReadNative(int argCount, Value* args) {
     pop();
     return OBJ_VAL(rows);
 }
-
+static Value modNative(int argCount, Value* args) {
+    (void)argCount;
+    double a = AS_NUMBER(args[0]);
+    double b = AS_NUMBER(args[1]);
+    return NUMBER_VAL(fmod(a, b));
+}
 void registerCoreNatives() {
     defineNative("sin",        sinNative);
     defineNative("cos",        cosNative);
@@ -122,5 +127,6 @@ void registerCoreNatives() {
     defineNative("csvRead",    csvReadNative);
     defineNative("rand",       randNative);
     defineNative("randRange",  randRangeNative);
+    defineNative("mod",        modNative);
     srand((unsigned int)time(NULL));
 }
