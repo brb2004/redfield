@@ -45,6 +45,58 @@ static Value randRangeNative(int argCount, Value* args) {
     double r  = (double)rand() / ((double)RAND_MAX + 1.0);
     return NUMBER_VAL(lo + r * (hi - lo));
 }
+static Value stringToNumNative(int argCount, Value* args) {
+    (void)argCount;
+    ObjString* str = AS_STRING(args[0]);
+    return NUMBER_VAL(atof(str->chars));
+}
+static Value csvReadNative(int argCount, Value* args) {
+    (void)argCount;
+    ObjString* path = AS_STRING(args[0]);
+    FILE* file = fopen(path->chars, "r");
+    if (!file) return NIL_VAL;
+
+    ObjArray* rows = newArray();
+    push(OBJ_VAL(rows));
+
+    char line[4096];
+    while (fgets(line, sizeof(line), file)) {
+        // Strip newline
+        int len = strlen(line);
+        if (len > 0 && line[len-1] == '\n') line[--len] = '\0';
+        if (len > 0 && line[len-1] == '\r') line[--len] = '\0';
+
+        ObjArray* row = newArray();
+        push(OBJ_VAL(row));
+
+        char* p = line;
+        while (1) {
+            char* comma = strchr(p, ',');
+            int fieldLen = comma ? (int)(comma - p) : (int)strlen(p);
+            ObjString* field = copyString(p, fieldLen);
+            if (row->count >= row->capacity) {
+                int newCap = row->capacity < 8 ? 8 : row->capacity * 2;
+                row->items = GROW_ARRAY(Value, row->items, row->capacity, newCap);
+                row->capacity = newCap;
+            }
+            row->items[row->count++] = OBJ_VAL(field);
+            if (!comma) break;
+            p = comma + 1;
+        }
+
+        if (rows->count >= rows->capacity) {
+            int newCap = rows->capacity < 8 ? 8 : rows->capacity * 2;
+            rows->items = GROW_ARRAY(Value, rows->items, rows->capacity, newCap);
+            rows->capacity = newCap;
+        }
+        rows->items[rows->count++] = OBJ_VAL(row);
+        pop();
+    }
+
+    fclose(file);
+    pop();
+    return OBJ_VAL(rows);
+}
 
 void registerCoreNatives() {
     defineNative("sin",        sinNative);
@@ -66,6 +118,8 @@ void registerCoreNatives() {
     defineNative("round",      roundNative);
     defineNative("hypot",      hypotNative);
     defineNative("numToString",toStringNative);
+    defineNative("stringToNum", stringToNumNative);
+    defineNative("csvRead",    csvReadNative);
     defineNative("rand",       randNative);
     defineNative("randRange",  randRangeNative);
     srand((unsigned int)time(NULL));
