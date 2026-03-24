@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
-#include "../vm.h"
-#include "../obj.h"
-#include "../memory.h"
+#include "vm.h"
+#include "obj.h"
+#include "memory.h"
 
 void runtimeError(const char* format, ...);
 char *rfFetch(const char* url, const char* method, const char* body);

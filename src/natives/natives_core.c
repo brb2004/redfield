@@ -3,9 +3,9 @@
 #include <time.h>
 #include <string.h>
 #include <math.h>
-#include "../vm.h"
-#include "../obj.h"
-#include "../memory.h"
+#include "../vm/vm.h"
+#include "obj.h"
+#include "memory.h"
 
 static Value sinNative(int argCount, Value* args)   { (void)argCount; return NUMBER_VAL(sin(AS_NUMBER(args[0]))); }
 static Value cosNative(int argCount, Value* args)   { (void)argCount; return NUMBER_VAL(cos(AS_NUMBER(args[0]))); }

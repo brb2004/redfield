@@ -1,7 +1,7 @@
 #include <stdlib.h>
-#include "../vm.h"
-#include "../obj.h"
-#include "../memory.h"
+#include "vm.h"
+#include "obj.h"
+#include "memory.h"
 
 
 static Value lenNative(int argCount, Value* args) {

@@ -1,7 +1,6 @@
 CC = gcc
 CXXFLAGS = -Wall -Wextra -std=c++17 -Ilib/glad/include -Ilib/cJSON -Isrc
-CFLAGS = -Wall -Wextra -std=c99 -D_DEFAULT_SOURCE -Isrc -Ilib/glad/include -Ilib/cJSON -Wno-unused-parameter
-
+CFLAGS = -Wall -Wextra -std=c99 -D_DEFAULT_SOURCE -Isrc -Isrc/vm -Isrc/compiler -Ilib/glad/include -Ilib/cJSON -Wno-unused-parameter
 BIN_DIR = bin
 
 ifeq ($(OS),Windows_NT)
@@ -16,8 +15,9 @@ else
 	STDLIB_GEN = python3 -c "import json; content=open('lib/stdlib.rf').read(); print('const char* REDFIELD_STDLIB = ' + json.dumps(content) + ';')"
 endif
 
-C_SRC   = $(filter-out src/editor.c, $(wildcard src/*.c) $(wildcard src/natives/*.c))
-CXX_SRC = $(wildcard src/*.cpp)
+C_SRC = $(filter-out src/editor.c src/compiler.c src/vm.c, \
+            $(wildcard src/*.c) $(wildcard src/natives/*.c) \
+            $(wildcard src/vm/*.c) $(wildcard src/compiler/*.c))
 
 C_OBJ   = $(C_SRC:.c=.o)
 CXX_OBJ = $(CXX_SRC:.cpp=.o)
@@ -43,12 +43,18 @@ src/%.o: src/%.cpp
 src/natives/%.o: src/natives/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+src/vm/%.o: src/vm/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+src/compiler/%.o: src/compiler/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(BIN): $(OBJ)
 	$(MKDIR) $(BIN_DIR)
 	g++ $(OBJ) -o $(BIN) $(LIBS)
 
 clean:
-	rm -f src/*.o src/natives/*.o lib/glad/src/glad.o lib/cJSON/cJSON.o $(BIN)
+	rm -f src/*.o src/natives/*.o src/vm/*.o src/compiler/*.o lib/glad/src/glad.o lib/cJSON/cJSON.o $(BIN)
 
 install: all
 	cp $(BIN) /usr/local/bin/redfield

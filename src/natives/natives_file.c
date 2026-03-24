@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../vm.h"
-#include "../obj.h"
-#include "../memory.h"
+#include "vm.h"
+#include "obj.h"
+#include "memory.h"
 
 void runtimeError(const char* format, ...);
 

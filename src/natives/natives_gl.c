@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
-#include "../vm.h"
-#include "../obj.h"
-#include "../memory.h"
+#include "vm.h"
+#include "obj.h"
+#include "memory.h"
 
 extern GLFWwindow* window;
 extern void initOpenGL();
