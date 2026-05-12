@@ -61,7 +61,6 @@ static Value csvReadNative(int argCount, Value* args) {
 
     char line[4096];
     while (fgets(line, sizeof(line), file)) {
-        // Strip newline
         int len = strlen(line);
         if (len > 0 && line[len-1] == '\n') line[--len] = '\0';
         if (len > 0 && line[len-1] == '\r') line[--len] = '\0';

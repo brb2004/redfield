@@ -139,7 +139,7 @@ static Value readCSVNative(int argCount, Value* args) {
 
     char line[4096];
     while (fgets(line, sizeof(line), file)) {
-        // Strip \r\n
+
         int len = (int)strlen(line);
         while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r'))
             line[--len] = '\0';
@@ -153,7 +153,6 @@ static Value readCSVNative(int argCount, Value* args) {
             char* comma = strchr(p, ',');
             int fieldLen = comma ? (int)(comma - p) : (int)strlen(p);
 
-            // Trim \r from field end
             int trimLen = fieldLen;
             while (trimLen > 0 && (p[trimLen-1] == '\r' || p[trimLen-1] == '\n'))
                 trimLen--;
@@ -161,7 +160,6 @@ static Value readCSVNative(int argCount, Value* args) {
             ObjString* field = copyString(p, trimLen);
             push(OBJ_VAL(field));
 
-            // Re-fetch row after GC
             row = AS_ARRAY(vm.stackTop[-2]);
             if (row->count >= row->capacity) {
                 int newCap = row->capacity < 8 ? 8 : row->capacity * 2;
@@ -169,13 +167,12 @@ static Value readCSVNative(int argCount, Value* args) {
                 row->capacity = newCap;
             }
             row->items[row->count++] = OBJ_VAL(field);
-            pop(); // field
+            pop(); 
 
             if (!comma) break;
             p = comma + 1;
         }
 
-        // Re-fetch rows after GC
         rows = AS_ARRAY(vm.stackTop[-2]);
         if (rows->count >= rows->capacity) {
             int newCap = rows->capacity < 8 ? 8 : rows->capacity * 2;
@@ -183,12 +180,12 @@ static Value readCSVNative(int argCount, Value* args) {
             rows->capacity = newCap;
         }
        rows->items[rows->count++] = vm.stackTop[-1];
-        pop(); // row
+        pop(); 
     }
 
     fclose(file);
     Value result = vm.stackTop[-1];
-    pop(); // rows
+    pop(); 
     return result;
 }
 void registerFileNatives() {
@@ -202,4 +199,5 @@ void registerFileNatives() {
     defineNative("fileExists",    fileExistsNative);
     defineNative("fileFlush",     fileFlushNative);
     defineNative("readCSV",       readCSVNative);
+    
 }

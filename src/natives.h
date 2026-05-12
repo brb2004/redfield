@@ -8,5 +8,8 @@ void registerMatrixNatives();
 void registerFileNatives();
 void registerGLNatives();
 void registerHttpNatives();
+void registerIONatives();
+void registerStringNatives();
+void registerJSONNatives();
 #endif
  

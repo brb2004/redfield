@@ -14,4 +14,8 @@ void registerNatives() {
     registerMatrixNatives();
     registerFileNatives();
     registerHttpNatives();
+    registerIONatives();
+    registerStringNatives();
+    registerJSONNatives();
+    
 }

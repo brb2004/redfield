@@ -7,15 +7,12 @@
 #include "../table.h"
 #include "stdlib.h"
 void runtimeError(const char* format, ...);
-
-// Disable GC during matrix ops to avoid invalidating pointers
 #define MATRIX_OP_BEGIN size_t _savedNextGC = vm.nextGC; vm.nextGC = (size_t)-1;
 #define MATRIX_OP_END   vm.nextGC = _savedNextGC;
 
 static ObjMatrix* getMatrix(Value val) {
     if (IS_MATRIX(val)) return AS_MATRIX(val);
     if (IS_INSTANCE(val)) {
-        // Walk fields table looking for "handle"
         Table* fields = &AS_INSTANCE(val)->fields;
         for (int i = 0; i < fields->capacity; i++) {
             Entry* entry = &fields->entries[i];
@@ -31,9 +28,7 @@ static ObjMatrix* getMatrix(Value val) {
 }
 
 static Value wrapMatrix(ObjMatrix* mat) {
-    // mat must already be on the stack by caller
     Value matrixClass;
-    // Find Matrix class without allocating a new string
     Table* globals = &vm.globals;
     for (int i = 0; i < globals->capacity; i++) {
         Entry* entry = &globals->entries[i];
@@ -45,14 +40,12 @@ static Value wrapMatrix(ObjMatrix* mat) {
             goto found;
         }
     }
-    return OBJ_VAL(mat); // fallback
+    return OBJ_VAL(mat); 
 found:;
     ObjInstance* instance = newInstance(AS_CLASS(matrixClass));
     push(OBJ_VAL(instance));
-    // Set handle field without allocating new string if possible
     ObjString* handleKey = NULL;
     Table* ifields = &instance->fields;
-    // Find or create handle key
     for (int i = 0; i < globals->capacity; i++) {
         Entry* e = &globals->entries[i];
         if (e->key != NULL && e->key->length == 6 && memcmp(e->key->chars, "handle", 6) == 0) {

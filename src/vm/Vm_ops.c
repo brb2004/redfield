@@ -10,7 +10,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-// Forward declarations from vm_core.c
 extern uint8_t readByte(CallFrame* frame);
 extern void normalizePath(char* path);
 bool callValue(Value callee, int argCount);
